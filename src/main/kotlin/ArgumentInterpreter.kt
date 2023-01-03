@@ -8,7 +8,9 @@ class ArgumentInterpreter(val _args: Array<String>) {
     }
 
     fun buildApp(): Application {
-        val args = listOf("./musync", "file", "add", "./gradlew")
+//        val args = listOf("./musync", "file", "add", "./gradlew")
+//        val args = listOf("./musync", "file", "remove", "./gradlew.bat")
+        val args = listOf("./musync", "list", "added")
 //        val args = listOf("./musync", "init",)
         val helpCommand = HelpApplication()
         if (args.size <= 1) {
@@ -18,7 +20,7 @@ class ArgumentInterpreter(val _args: Array<String>) {
         return when (args[1]) {
             "sync" -> SyncApplication(cwd(), args.drop(2))
             "init" -> InitApplication(cwd())
-            "list" -> ListApplication(cwd())
+            "list" -> ListApplication(cwd(), args.drop(2).firstOrNull())
             "file" -> FileApplication(cwd(), args.drop(2))
             //"destination"
             else -> helpCommand

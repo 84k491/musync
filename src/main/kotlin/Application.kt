@@ -31,7 +31,6 @@ class FileApplication(cwd: Path, private val args: List<String>): WorkingApplica
     }
 
     override fun work(): Int {
-
         val action = decodeAction(args[0])
         if (null == action) {
             println("Unknown action <${args[0]}>")
@@ -131,8 +130,32 @@ class SyncApplication(cwd: Path, private val args: List<String>): WorkingApplica
     }
 }
 
-class ListApplication(cwd: Path): WorkingApplication(cwd) {
+class ListApplication(cwd: Path, private val filter: String?): WorkingApplication(cwd) {
+    private fun decodeFilter(v: String): Action? {
+        return when (v) {
+            "new" -> Action.Undefined
+            "added" -> Action.Include
+            "removed" -> Action.Exclude
+            else -> null
+        }
+    }
+
     override fun work(): Int {
+        val action = decodeFilter(filter?:"new")
+        if (null == action) {
+            println("Unknown action <${filter}>")
+            return -1
+        }
+
+        val index = Index.load(cwd)
+        if (null == index) {
+            println("Can't find index file in <$cwd> or above. You need to create one first with 'init'")
+            return -1
+        }
+
+        val launcher = Launcher(index)
+        println("Here are the files, marked as <$action>:")
+        launcher.source.all().filter { it.action == action }.forEach{ println(it.fullPath()) }
         return 0
     }
 }

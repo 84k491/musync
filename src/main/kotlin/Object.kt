@@ -21,7 +21,7 @@ open class Object(val absolutePrefix: Path, val path: Path) {
     var children: List<Object> = fullPath().toFile().listFiles()?.
             map { Object(absolutePrefix, it.toPath().relativeTo(absolutePrefix)) }?: listOf()
 
-    private fun fullPath(): Path {
+    fun fullPath(): Path {
         return absolutePrefix.resolve(path)
     }
 
