@@ -1,8 +1,8 @@
-// TODO rename scanner?
+// TODO rename scanner? // TODO use companion object instead?
 class Launcher(private val indexFile: Index) {
-    val source = Source(indexFile.file.toPath().toAbsolutePath().parent.relativize(indexFile.cwd.toAbsolutePath()))
+    val source = Source(indexFile.file.toPath().toAbsolutePath().parent)
     val destinations = indexFile.destinationPaths.map { Destination(it) }
-    val undefined = source.updatePermissionsGetUndef(indexFile.permissions)
+    private val undefined = source.updatePermissionsGetUndef(indexFile.permissions)
 
     fun checkForSyncAndGetError(): String? {
         if (undefined.isNotEmpty()) {
@@ -11,5 +11,4 @@ class Launcher(private val indexFile: Index) {
 
         return null
     }
-
 }

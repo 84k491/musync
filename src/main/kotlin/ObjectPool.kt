@@ -6,7 +6,7 @@ abstract class ObjectPool(prefix: Path): Object(prefix, Path.of(".")) {
     // get objects that present here, but not it other pool
     fun exclusion(others: List<ObjectPool>): List<Object> {
         return pickIf {
-            others.fold(true, {acc: Boolean, other: ObjectPool -> acc && null != other.findByPath(it.path) })
+            others.fold(true) { acc: Boolean, other: ObjectPool -> acc && null != other.findByPath(it.path) }
         }
     }
 
@@ -17,6 +17,7 @@ abstract class ObjectPool(prefix: Path): Object(prefix, Path.of(".")) {
 
 class Source(prefix: Path) : ObjectPool(prefix) {
     val toCopyOut = mutableListOf<Object>()
+
     fun copyOutSize(): Long {
         return toCopyOut.fold(super.size()) { acc: Long, it: Object -> acc + it.size() }
     }
@@ -27,6 +28,7 @@ class Source(prefix: Path) : ObjectPool(prefix) {
     fun updatePermissionsGetUndef(permissions: Map<String, Action>): List<Object> {
         val undefined = mutableListOf<Object>()
         foreach { file ->
+//            println("Updating permissions for file: ${file.toString()}")
             permissions[file.path.toString()].let { perm ->
                 if (null != perm) {
                     file.action = perm

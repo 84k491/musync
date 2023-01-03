@@ -1,4 +1,6 @@
+import java.io.File
 import java.nio.file.Path
+import kotlin.io.path.Path
 
 abstract class Application {
     abstract fun work(): Int
@@ -44,7 +46,7 @@ class FileApplication(cwd: Path, private val args: List<String>): WorkingApplica
 
         val launcher = Launcher(index)
         args.drop(1).forEach {
-            val file = launcher.source.findByPath(Path.of(it))
+            val file = launcher.source.findByPath(cwd.resolve(Path(it)).toAbsolutePath().normalize())
             if (null == file) {
                 println("There is no such file: $it")
                 return@work -1
