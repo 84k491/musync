@@ -1,4 +1,3 @@
-import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.Path
 
@@ -110,10 +109,10 @@ class SyncApplication(cwd: Path, private val args: List<String>): WorkingApplica
         }
 
         val launcher = Launcher(index)
-        launcher.checkForSyncAndGetError()?.let { println(it); return@sync -1 }
 
         val dispatcher = Dispatcher(launcher.source, launcher.destinations)
-        dispatcher.print_plans()
+        dispatcher.dispatchObjects()?.let { println(it); return@sync -1 }
+        dispatcher.printPlans()
 
         if (SubCommand.DryRun == subCommand) {
             return 0
@@ -194,7 +193,11 @@ class DestinationApplication(cwd: Path, private val args: List<String>): Working
         val callback = if (action == Action.Include) {
             { list: MutableList<String>, item: String ->
                 if (!list.contains(item)) {
+                    println("Adding destination path: $item")
                     list.add(item)
+                }
+                else {
+                    println("Destination is already added: $item")
                 }
             }
         }
@@ -203,7 +206,6 @@ class DestinationApplication(cwd: Path, private val args: List<String>): Working
         }
 
         paths.forEach {
-            println("Adding destination path: $it")
             callback(index.destinationPaths, it)
         }
 

@@ -1,13 +1,13 @@
 import java.nio.file.Path
 
-// represents all objects contained below the prefix
-// abstract for source or destination
 abstract class ObjectPool(prefix: Path): Object(prefix, Path.of(".")) {
-    // get objects that present here, but not it other pool
     fun exclusion(others: List<ObjectPool>): List<Object> {
-        return pickIf {
-            others.fold(true) { acc: Boolean, other: ObjectPool -> acc && null != other.findByPath(it.path) }
+        val ex = all().filter { thisObject ->
+            others.fold(true) {acc, objectPool ->
+                acc && null == objectPool.findByPath(thisObject.fullPath())
+            }
         }
+        return ex
     }
 }
 
@@ -46,14 +46,24 @@ class Destination(prefix: Path) : ObjectPool(prefix) {
     val to_remove = mutableListOf<Object>()
     val to_copy_here = mutableListOf<Object>()
 
-    fun available_space(): Long {
-        return 0L
+    private fun rawAvailableSpace(): Long {
+        return fullPath().toFile().usableSpace
     }
 
-    override fun size(): Long {
-        var current_size = to_copy_here.fold(super.size(), {acc: Long, it: Object -> acc + it.size() })
-        current_size -= to_remove.fold(0L, {acc: Long, it: Object -> acc + it.size() })
-        return current_size
+    private fun List<Object>.totalSize(): Long {
+        return this.fold(0) {acc: Long, obj: Object -> acc + obj.size() }
+    }
+
+    fun sizeAdded(): Long {
+        return to_copy_here.totalSize() - to_remove.totalSize()
+    }
+
+    fun availableSpace(): Long {
+        return rawAvailableSpace() - sizeAdded()
+    }
+
+    fun planendSize(): Long {
+        return size() + sizeAdded()
     }
 
 }

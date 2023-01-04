@@ -12,7 +12,15 @@ class ArgumentInterpreter(val _args: Array<String>) {
 //        val args = listOf("./musync", "file", "remove", "./gradlew.bat")
 //        val args = listOf("./musync", "list", "added")
 //        val args = listOf("./musync", "init",)
-        val args = listOf("./musync", "destination", "add", "/bin")
+//        val args = listOf("./musync", "destination", "add", "/home/bakar/tmp/to_one", "/home/bakar/tmp/to_two", "/home/bakar/tmp/to_three")
+        val args = listOf("./musync", "sync",)
+
+//        val args = listOf(
+//          "./musync",
+//          "file",
+//          "add",
+//          "./settings.gradle.kts",
+//          "./build.gradle.kts")
 
         val helpCommand = HelpApplication()
         if (args.size <= 1) {

@@ -34,12 +34,6 @@ open class Object(val absolutePrefix: Path, val path: Path) {
         return null
     }
 
-    fun pickIf(pickCondition: (Object) -> Boolean): List<Object> {
-        val result = mutableListOf<Object>()
-        foreach { if (pickCondition(it)) { result.add(it) } }
-        return result
-    }
-
     fun findByPath(path: Path): Object? {
         val checkSingleObject = { it: Object ->
             it.fullPath() == path
@@ -69,7 +63,7 @@ open class Object(val absolutePrefix: Path, val path: Path) {
     }
 
     open fun size(): Long {
-        return fullPath().toFile().length()
+        return fullPath().toFile().length() + children.fold(0) {acc: Long, obj: Object -> acc + obj.size() }
     }
 
     override fun toString(): String {
