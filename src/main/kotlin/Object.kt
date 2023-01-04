@@ -6,18 +6,6 @@ import kotlin.io.path.relativeTo
 // TODO rename FileExt
 open class Object(val absolutePrefix: Path, val path: Path) {
     var action = Action.Undefined
-        set(v) {
-            if (isDirectory()) {
-                children.forEach{ it.action = v }
-            }
-            if (field != v) {
-                println("Setting action $v for file: ${fullPath()}")
-                field = v
-            }
-            else {
-                println("Nothing to change for file: ${fullPath()}")
-            }
-        }
 
     var children: List<Object> = fullPath().toFile().listFiles()?.
             map { Object(absolutePrefix, it.toPath().relativeTo(absolutePrefix)) }?: listOf()
@@ -26,13 +14,45 @@ open class Object(val absolutePrefix: Path, val path: Path) {
         return absolutePrefix.resolve(path)
     }
 
-    fun file(): File {
+    fun setActionRecursively(v: Action) {
+        if (isDirectory()) {
+            children.forEach{ it.setActionRecursively(v) }
+        }
+        if (action != v) {
+            println("Setting action $v for file: ${fullPath()}")
+            action = v
+        }
+        else {
+            println("Nothing to change for file: ${fullPath()}")
+        }
+    }
+
+    private fun file(): File {
         return fullPath().toFile()
     }
 
     fun isDirectory(): Boolean {
-        return File(fullPath().toString()).isDirectory
+        return file().isDirectory
     }
+
+    fun updateDirPermissions() {
+//        println("Starting to update dir permissions for ${fullPath()}")
+        if (!isDirectory()) {
+            return
+        }
+        if (children.isEmpty()) {
+            action = Action.Exclude
+            return
+        }
+
+        children.forEach{ if (it.isDirectory()) it.updateDirPermissions() }
+
+        action = children.drop(1).fold(children.first().action) { acc: Action, obj: Object ->
+            if (acc == obj.action) acc else Action.Mixed
+        }
+//        println("Updating permissions for dir: ${fullPath()}, new action: $action")
+    }
+
 
     fun getTopParentPath(): Path? {
         println("Finding top parent for $path (name count = ${path.nameCount}) ${fullPath()}")
@@ -55,7 +75,7 @@ open class Object(val absolutePrefix: Path, val path: Path) {
             return this
         }
         else {
-            children.forEach{if (checkSingleObject(it)) return@findByPath it }
+            children.forEach{ child -> child.findByPath(path)?.let{ return it } }
             return null
         }
     }

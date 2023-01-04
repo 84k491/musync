@@ -1,11 +1,19 @@
 class Dispatcher(private val source: Source, private val destinations: List<Destination>) {
 
     fun dispatchObjects(): String? {
-        destinations.forEach{ dest ->
-            dest.to_remove.addAll(dest.exclusion(listOf(source)).filter { !it.isDirectory() }) }
+        destinations.forEach { dest ->
+            dest.to_remove.addAll(dest.exclusion(listOf(source)))
+            // TODO drop current path instead of "drop(1)"?
+            dest.to_remove.addAll(dest.all().drop(1).filter {
+                val objAtSource = source.findByPath(it.path) ?: return@filter true
+                return@filter when (objAtSource.action) {
+                    Action.Mixed, Action.Include -> false
+                    else -> true
+                }
+            })
+        }
         source.toCopyOut.addAll(
             source.exclusion(destinations)
-                .filter { !it.isDirectory() }
                 .filter { it.action == Action.Include }
         )
 

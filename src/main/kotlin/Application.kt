@@ -53,7 +53,7 @@ class FileApplication(cwd: Path, private val args: List<String>): WorkingApplica
                 println("There is no such file: $it")
                 return@work -1
             }
-            file.action = action
+            file.setActionRecursively(action)
         }
 
         index.updatePermissions(launcher.source.getPermissions().filter {
@@ -126,15 +126,15 @@ class SyncApplication(cwd: Path, private val args: List<String>): WorkingApplica
 //            return 0
 //        }
 
-        println("Removing and copying...")
-        launcher.destinations.forEach { dest ->
-            dest.to_remove.forEach { obj ->
-                obj.file().delete()
-            }
-            dest.to_copy_here.forEach { obj ->
-                obj.file().copyTo(dest.composeTarget(obj).toFile())
-            }
-        }
+        println("NOT Removing and copying...")
+//        launcher.destinations.forEach { dest ->
+//            dest.to_remove.forEach { obj ->
+//                obj.file().delete()
+//            }
+//            dest.to_copy_here.forEach { obj ->
+//                obj.file().copyTo(dest.composeTarget(obj).toFile())
+//            }
+//        }
 
         return 0
     }

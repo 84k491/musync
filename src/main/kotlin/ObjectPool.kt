@@ -2,11 +2,14 @@ import java.nio.file.Path
 
 abstract class ObjectPool(prefix: Path): Object(prefix, Path.of(".")) {
     fun exclusion(others: List<ObjectPool>): List<Object> {
-        val ex = all().filter { thisObject ->
+        // TODO drop current path instead of "drop(1)"?
+        val ex = all().drop(1).filter { thisObject ->
             others.fold(true) {acc, objectPool ->
-                acc && null == objectPool.findByPath(thisObject.path)
+                val obj = objectPool.findByPath(thisObject.path)
+                acc && null == obj
             }
         }
+
         return ex
     }
 }
@@ -14,9 +17,6 @@ abstract class ObjectPool(prefix: Path): Object(prefix, Path.of(".")) {
 class Source(prefix: Path) : ObjectPool(prefix) {
     val toCopyOut = mutableListOf<Object>()
 
-    fun copyOutSize(): Long {
-        return toCopyOut.fold(super.size()) { acc: Long, it: Object -> acc + it.size() }
-    }
     init {
         println("Source initialized: ${super.toString()}")
     }
@@ -24,7 +24,6 @@ class Source(prefix: Path) : ObjectPool(prefix) {
     fun updatePermissionsGetUndef(permissions: Map<String, Action>): List<Object> {
         val undefined = mutableListOf<Object>()
         foreach { file ->
-//            println("Updating permissions for file: ${file.toString()}")
             permissions[file.path.toString()].let { perm ->
                 if (null != perm) {
                     file.action = perm
@@ -34,11 +33,18 @@ class Source(prefix: Path) : ObjectPool(prefix) {
                 }
             }
         }
+
+        updateDirPermissions()
+
         return undefined
     }
 
     fun getPermissions(): Map<String, Action> {
         return all().filter { !it.isDirectory() }.associateBy ( {it.path.toString()}, {it.action} )
+    }
+
+    fun excluded(): List<Object> {
+        return all().filter { it.action == Action.Exclude }
     }
 }
 
@@ -48,10 +54,6 @@ class Destination(prefix: Path) : ObjectPool(prefix) {
 
     init {
         println("Destination initialized: $this, space available: ${availableSpace()}")
-    }
-
-    fun composeTarget(obj: Object): Path {
-        return absolutePrefix.resolve(obj.path).toAbsolutePath()
     }
 
     fun plannedFilesContainParent(pathToFind: Path): Boolean {
