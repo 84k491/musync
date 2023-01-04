@@ -8,7 +8,7 @@ class ArgumentInterpreter(val _args: Array<String>) {
     }
 
     fun buildApp(): Application {
-//        val args = listOf("./musync", "file", "add", "./gradlew")
+//        val args = listOf("./musync", "file", "add", "./src")
 //        val args = listOf("./musync", "file", "remove", "./gradlew.bat")
 //        val args = listOf("./musync", "list", "added")
 //        val args = listOf("./musync", "init",)

@@ -54,6 +54,10 @@ class Destination(prefix: Path) : ObjectPool(prefix) {
         return absolutePrefix.resolve(obj.path).toAbsolutePath()
     }
 
+    fun plannedFilesContainParent(pathToFind: Path): Boolean {
+        return null != to_copy_here.find { it.getTopParentPath() == pathToFind }
+    }
+
     private fun rawAvailableSpace(): Long {
         return fullPath().toFile().usableSpace
     }
@@ -73,6 +77,5 @@ class Destination(prefix: Path) : ObjectPool(prefix) {
     fun planendSize(): Long {
         return size() + sizeAdded()
     }
-
 }
 

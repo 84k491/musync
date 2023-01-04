@@ -1,5 +1,6 @@
 import java.io.File
 import java.nio.file.Path
+import kotlin.io.path.isDirectory
 import kotlin.io.path.relativeTo
 
 // TODO rename FileExt
@@ -33,9 +34,16 @@ open class Object(val absolutePrefix: Path, val path: Path) {
         return File(fullPath().toString()).isDirectory
     }
 
-    fun getTopParent(): Object? {
-        // TODO implement
-        return null
+    fun getTopParentPath(): Path? {
+        println("Finding top parent for $path (name count = ${path.nameCount}) ${fullPath()}")
+        var currentPath = path
+        while (currentPath.nameCount > 1) {
+            println("path on current interation: $currentPath")
+            currentPath = currentPath.parent
+        }
+        val result = if (currentPath.isDirectory()) currentPath else null
+        println("Top parent is: $result")
+        return result
     }
 
     fun findByPath(path: Path): Object? {

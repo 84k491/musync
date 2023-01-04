@@ -1,5 +1,6 @@
 import java.nio.file.Path
 import kotlin.io.path.Path
+import kotlin.io.path.relativeTo
 
 abstract class Application {
     abstract fun work(): Int
@@ -46,7 +47,8 @@ class FileApplication(cwd: Path, private val args: List<String>): WorkingApplica
         val files = args.drop(1)
         // TODO use undefined if empty
         files.forEach {
-            val file = launcher.source.findByPath(cwd.resolve(Path(it)).toAbsolutePath().normalize())
+            val pathToFind = cwd.resolve(Path(it)).toAbsolutePath().normalize()
+            val file = launcher.source.findByPath(pathToFind.relativeTo(launcher.source.fullPath()))
             if (null == file) {
                 println("There is no such file: $it")
                 return@work -1
@@ -124,15 +126,15 @@ class SyncApplication(cwd: Path, private val args: List<String>): WorkingApplica
 //            return 0
 //        }
 
-        println("NOT Removing and copying...")
-//        launcher.destinations.forEach { dest ->
-//            dest.to_remove.forEach { obj ->
-//                obj.file().delete()
-//            }
-//            dest.to_copy_here.forEach { obj ->
-//                obj.file().copyTo(dest.composeTarget(obj).toFile())
-//            }
-//        }
+        println("Removing and copying...")
+        launcher.destinations.forEach { dest ->
+            dest.to_remove.forEach { obj ->
+                obj.file().delete()
+            }
+            dest.to_copy_here.forEach { obj ->
+                obj.file().copyTo(dest.composeTarget(obj).toFile())
+            }
+        }
 
         return 0
     }

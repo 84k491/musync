@@ -12,9 +12,15 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
         println("Have ${source.toCopyOut.size} files to copy from source")
 
         for (sourceFile in source.toCopyOut) {
-            val toDest: Destination = destinations.find { dest ->
-                dest.children.find { it == sourceFile.getTopParent() } != null }
-                ?: destinations.maxWithOrNull { lh, rh -> (lh.availableSpace() - rh.availableSpace()).toInt() }
+            val destinationsWithParent = destinations.filter { dest ->
+                sourceFile.getTopParentPath()?.let { topParentPath ->
+                    null != dest.findByPath(topParentPath) || dest.plannedFilesContainParent(topParentPath)
+                } ?:false
+            }
+            val searchInDest = destinationsWithParent.ifEmpty { destinations }
+
+            val toDest: Destination =
+                searchInDest.maxWithOrNull { lh, rh -> (lh.availableSpace() - rh.availableSpace()).toInt() }
                 ?: return "No destination when dispatching ${sourceFile.path}"
 
             println("Dispatching file $sourceFile to ${toDest.fullPath()}")
