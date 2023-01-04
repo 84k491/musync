@@ -4,7 +4,7 @@ abstract class ObjectPool(prefix: Path): Object(prefix, Path.of(".")) {
     fun exclusion(others: List<ObjectPool>): List<Object> {
         val ex = all().filter { thisObject ->
             others.fold(true) {acc, objectPool ->
-                acc && null == objectPool.findByPath(thisObject.fullPath())
+                acc && null == objectPool.findByPath(thisObject.path)
             }
         }
         return ex
@@ -45,6 +45,14 @@ class Source(prefix: Path) : ObjectPool(prefix) {
 class Destination(prefix: Path) : ObjectPool(prefix) {
     val to_remove = mutableListOf<Object>()
     val to_copy_here = mutableListOf<Object>()
+
+    init {
+        println("Destination initialized: $this, space available: ${availableSpace()}")
+    }
+
+    fun composeTarget(obj: Object): Path {
+        return absolutePrefix.resolve(obj.path).toAbsolutePath()
+    }
 
     private fun rawAvailableSpace(): Long {
         return fullPath().toFile().usableSpace

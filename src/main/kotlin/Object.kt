@@ -25,6 +25,10 @@ open class Object(val absolutePrefix: Path, val path: Path) {
         return absolutePrefix.resolve(path)
     }
 
+    fun file(): File {
+        return fullPath().toFile()
+    }
+
     fun isDirectory(): Boolean {
         return File(fullPath().toString()).isDirectory
     }
@@ -36,7 +40,7 @@ open class Object(val absolutePrefix: Path, val path: Path) {
 
     fun findByPath(path: Path): Object? {
         val checkSingleObject = { it: Object ->
-            it.fullPath() == path
+            it.path == path
         }
 
         if (checkSingleObject(this)) {

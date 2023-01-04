@@ -118,14 +118,21 @@ class SyncApplication(cwd: Path, private val args: List<String>): WorkingApplica
             return 0
         }
 
-        if (SubCommand.Ask == subCommand) {
-            // ask
-            // if no, then return
-            return 0
-        }
+//        if (SubCommand.Ask == subCommand) {
+//            // ask
+//            // if no, then return
+//            return 0
+//        }
 
-        // TODO copy
-        println("Copying (fake)")
+        println("NOT Removing and copying...")
+//        launcher.destinations.forEach { dest ->
+//            dest.to_remove.forEach { obj ->
+//                obj.file().delete()
+//            }
+//            dest.to_copy_here.forEach { obj ->
+//                obj.file().copyTo(dest.composeTarget(obj).toFile())
+//            }
+//        }
 
         return 0
     }

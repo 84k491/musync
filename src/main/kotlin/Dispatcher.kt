@@ -9,12 +9,7 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
                 .filter { it.action == Action.Include }
         )
 
-//        val totalSizeAvailable = destinations.fold(0) { acc: Long, it: Destination -> acc + it.availableSpace() }
-//        if (source.copyOutSize() > totalSizeAvailable) {
-//            return "Not enough space: ${source.copyOutSize()} bytes to copy, $totalSizeAvailable bytes available"
-//        }
-
-        println("Have ${source.toCopyOut.size} files to copy")
+        println("Have ${source.toCopyOut.size} files to copy from source")
 
         for (sourceFile in source.toCopyOut) {
             val toDest: Destination = destinations.find { dest ->
@@ -24,6 +19,9 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
 
             println("Dispatching file $sourceFile to ${toDest.fullPath()}")
             toDest.to_copy_here.add(sourceFile)
+            if (toDest.availableSpace() < 0) {
+                return "No space available for dispatching ${sourceFile.fullPath()} to ${toDest.fullPath()}"
+            }
         }
 
         return null
