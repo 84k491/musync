@@ -26,7 +26,7 @@ open class Object(val absolutePrefix: Path, val path: Path) {
     }
 
     fun isDirectory(): Boolean {
-        return File(fullPath().toString()).isDirectory // TODO refactor
+        return File(fullPath().toString()).isDirectory
     }
 
     fun getTopParent(): Object? {
@@ -40,7 +40,6 @@ open class Object(val absolutePrefix: Path, val path: Path) {
         return result
     }
 
-    // TODO think about moving the whole directory (need to store only relative paths in the file)
     fun findByPath(path: Path): Object? {
         val checkSingleObject = { it: Object ->
             it.fullPath() == path
@@ -70,10 +69,11 @@ open class Object(val absolutePrefix: Path, val path: Path) {
     }
 
     open fun size(): Long {
-        return 0L // TODO implement
+        return fullPath().toFile().length()
     }
 
     override fun toString(): String {
-        return "Object: {$absolutePrefix + $path}"
+        val type = if (isDirectory()) "dir" else "file"
+        return "Object: {${fullPath()}; $type; size = ${size()}}"
     }
 }

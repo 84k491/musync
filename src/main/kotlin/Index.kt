@@ -35,7 +35,7 @@ class Index(val cwd: Path, val file: File) {
         }
     }
 
-    val destinationPaths = mutableListOf<Path>()
+    val destinationPaths = mutableListOf<String>()
     val permissions = mutableMapOf<String, Action>()
 
     init {
@@ -50,7 +50,9 @@ class Index(val cwd: Path, val file: File) {
     @OptIn(ExperimentalSerializationApi::class)
     private fun deserialize() {
         try {
-            updatePermissions(Json.decodeFromStream<Map<String, Action>>(file.inputStream())) // TODO move it to init App
+            val pair: Pair<List<String>, Map<String, Action>> = Json.decodeFromStream(file.inputStream())
+            updatePermissions(pair.second) // TODO move it to init App
+            destinationPaths.addAll(pair.first)
         }
         catch (e: Exception) {
             serialize()
@@ -59,6 +61,7 @@ class Index(val cwd: Path, val file: File) {
 
     @OptIn(ExperimentalSerializationApi::class)
     fun serialize() {
-        Json.encodeToStream(permissions, file.outputStream())
+        val pair: Pair<List<String>, Map<String, Action>> = Pair(destinationPaths, permissions)
+        Json.encodeToStream(pair, file.outputStream())
     }
 }

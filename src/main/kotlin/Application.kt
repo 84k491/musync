@@ -22,7 +22,7 @@ class HelpApplication: Application() {
 }
 
 class FileApplication(cwd: Path, private val args: List<String>): WorkingApplication(cwd) {
-    fun decodeAction(str: String): Action? {
+    private fun decodeAction(str: String): Action? {
         return when (str) {
             "add" -> Action.Include
             "remove" -> Action.Exclude
@@ -44,7 +44,9 @@ class FileApplication(cwd: Path, private val args: List<String>): WorkingApplica
         }
 
         val launcher = Launcher(index)
-        args.drop(1).forEach {
+        val files = args.drop(1)
+        // TODO use undefined if empty
+        files.forEach {
             val file = launcher.source.findByPath(cwd.resolve(Path(it)).toAbsolutePath().normalize())
             if (null == file) {
                 println("There is no such file: $it")
@@ -156,6 +158,56 @@ class ListApplication(cwd: Path, private val filter: String?): WorkingApplicatio
         val launcher = Launcher(index)
         println("Here are the files, marked as <$action>:")
         launcher.source.all().filter { it.action == action }.forEach{ println(it.fullPath()) }
+        return 0
+    }
+}
+
+class DestinationApplication(cwd: Path, private val args: List<String>): WorkingApplication(cwd) {
+    fun decodeSubcommand(v: String): Action? {
+        return when (v) {
+            "add" -> Action.Include
+            "remove" -> Action.Exclude
+            else -> null
+        }
+    }
+
+    override fun work(): Int {
+        val index = Index.load(cwd)
+        if (null == index) {
+            println("Can't find index file in <$cwd> or above. You need to create one first with 'init'")
+            return -1
+        }
+
+        if (args.isEmpty()) {
+            println("No command specified")
+            return -1
+        }
+
+        val action = decodeSubcommand(args.first())
+        val paths = args.drop(1)
+        if (paths.isEmpty()) {
+            println("No path specified")
+            return -1
+        }
+        // TODO check if paths exists
+
+        val callback = if (action == Action.Include) {
+            { list: MutableList<String>, item: String ->
+                if (!list.contains(item)) {
+                    list.add(item)
+                }
+            }
+        }
+        else {
+            { list: MutableList<String>, item: String -> list.remove(item) }
+        }
+
+        paths.forEach {
+            println("Adding destination path: $it")
+            callback(index.destinationPaths, it)
+        }
+
+        index.serialize()
         return 0
     }
 }

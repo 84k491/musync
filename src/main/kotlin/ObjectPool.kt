@@ -9,10 +9,6 @@ abstract class ObjectPool(prefix: Path): Object(prefix, Path.of(".")) {
             others.fold(true) { acc: Boolean, other: ObjectPool -> acc && null != other.findByPath(it.path) }
         }
     }
-
-    override fun toString(): String {
-        return "ObjectPool: {${super.toString()}}"
-    }
 }
 
 class Source(prefix: Path) : ObjectPool(prefix) {

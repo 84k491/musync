@@ -10,8 +10,10 @@ class ArgumentInterpreter(val _args: Array<String>) {
     fun buildApp(): Application {
 //        val args = listOf("./musync", "file", "add", "./gradlew")
 //        val args = listOf("./musync", "file", "remove", "./gradlew.bat")
-        val args = listOf("./musync", "list", "added")
+//        val args = listOf("./musync", "list", "added")
 //        val args = listOf("./musync", "init",)
+        val args = listOf("./musync", "destination", "add", "/bin")
+
         val helpCommand = HelpApplication()
         if (args.size <= 1) {
             return helpCommand
@@ -22,7 +24,7 @@ class ArgumentInterpreter(val _args: Array<String>) {
             "init" -> InitApplication(cwd())
             "list" -> ListApplication(cwd(), args.drop(2).firstOrNull())
             "file" -> FileApplication(cwd(), args.drop(2))
-            //"destination"
+            "destination" -> DestinationApplication(cwd(), args.drop(2))
             else -> helpCommand
         }
     }
