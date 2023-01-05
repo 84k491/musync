@@ -2,7 +2,22 @@ import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.relativeTo
 
-abstract class Application { abstract fun work(): Error? }
+abstract class Application {
+    abstract fun work(): Error?
+
+    protected fun sizeAsString(bytes: Long): String {
+        val sizeMb = bytes / (1024 * 1024)
+        if (0L != sizeMb) {
+            return "$sizeMb Mb"
+        }
+        val sizeKb = bytes / 1024
+        if (0L != sizeKb) {
+            return "$sizeKb Kb"
+        }
+        return "$bytes b"
+    }
+
+}
 abstract class IndexedApplication(val index: Index): Application()
 
 class HelpApplication: Application() {
@@ -12,8 +27,12 @@ class HelpApplication: Application() {
                 "musync list: [added|removed|(default)new]: list files of the specified type\n" +
                 "musync space: [added|removed|(default)new]: get size of all files with specified type\n" +
                 "musync destination: [add|remove] <path(s)>: add or remove destination\n" +
-                "musync file: [add|remove] <file(s)>: change permission of file(s)\n" +
-                "musync sync: perform the synchronization (ask to copy)\n")
+                "musync file: [add|remove] <file(s)>: change action for file(s)\n" +
+                "musync sync <optional flag> : perform the synchronization (ask to copy)\n" +
+                "             --dry   : Dry run. Shows plans and exits\n" +
+                "             --ask   : Default. Shows plans and ask before further actions\n" +
+                "             --force : Shows plans and proceeds with actions\n" +
+        "")
         return null
     }
 }
@@ -62,26 +81,28 @@ class InitApplication(private val cwd: Path): Application() {
     }
 }
 
-class SyncApplication(i: Index, private val args: List<String>): IndexedApplication(i) {
+class SyncApplication(i: Index, private val inputStr: String?): IndexedApplication(i) {
     enum class SubCommand {
         Ask,
         DryRun,
         Force,
     }
 
+    private val subCommandMap = mapOf(
+            Pair("--ask", SubCommand.Ask),
+            Pair("--force", SubCommand.Force),
+            Pair("--dry", SubCommand.DryRun),
+        )
+
     private fun decodeSubcommand(str: String?): SubCommand? {
-        // TODO make a check if arg is an incorrect command
-        return if (null != str) {
-            SubCommand.valueOf(str)
+        if (null == str) {
+            return SubCommand.Ask
         }
-        else {
-            SubCommand.Ask
-        }
+        return subCommandMap[str]
     }
 
     override fun work(): Error? {
-        val scString = args.firstOrNull()
-        val subCommand = decodeSubcommand(scString) ?: return Error("Unknown subcommand $scString")
+        val subCommand = decodeSubcommand(inputStr) ?: return Error("Unknown subcommand $inputStr")
 
         val launcher = Launcher(index)
 
@@ -89,11 +110,11 @@ class SyncApplication(i: Index, private val args: List<String>): IndexedApplicat
         dispatcher.dispatchObjects()?.let { return@work it }
         dispatcher.printPlans()
 
-        if (SubCommand.DryRun == subCommand) {
-            return null
+        when (subCommand) {
+            SubCommand.Ask -> { println("Doing nothing. Use '--force' flag to remove and copy files"); return null }
+            SubCommand.DryRun -> { return null }
+            SubCommand.Force -> { /*continue*/ }
         }
-
-//        if (SubCommand.Ask == subCommand) {
 
         println("Removing and copying...")
         launcher.destinations.forEach { dest ->
@@ -184,27 +205,13 @@ class SpaceApplication(i: Index, private val filter: String?): IndexedApplicatio
         }
     }
 
-    private fun printSize(bytes: Long) {
-        val sizeMb = bytes / (1024 * 1024)
-        if (0L != sizeMb) {
-            println("$sizeMb Mb")
-            return
-        }
-        val sizeKb = bytes / 1024
-        if (0L != sizeKb) {
-            println("$sizeKb Kb")
-            return
-        }
-        println("$bytes b")
-    }
-
     override fun work(): Error? {
         val action = decodeFilter(filter?:"new") ?: return Error("Unknown action <${filter}>")
         val totalSize = Launcher(index).source.all().filter { it.action == action }.fold(0) {
                 acc: Long, obj: Object ->
             acc + obj.size()
         }
-        printSize(totalSize)
+        println(sizeAsString(totalSize))
         return null
     }
 }

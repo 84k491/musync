@@ -29,7 +29,6 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
                 searchInDest.maxWithOrNull { lh, rh -> (lh.availableSpace() - rh.availableSpace()).toInt() }
                 ?: return Error("No destination when dispatching ${sourceFile.path}")
 
-            println("Dispatching file $sourceFile to ${toDest.fullPath()}")
             toDest.toCopyHere.add(sourceFile)
             if (toDest.availableSpace() < 0) {
                 return Error("No space available for dispatching ${sourceFile.fullPath()} to ${toDest.fullPath()}")
@@ -54,7 +53,7 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
                 val copySize = destination.toCopyHere.fold(0) { acc: Long, obj: Object -> obj.size() + acc }
                 println("        In total ${destination.toCopyHere.size} objects, $copySize bytes")
             }
-            println("Space available: ${destination.availableSpace() / 1024} kbytes")
+            println("Space left: ${destination.availableSpace() / 1024} kbytes")
         }
     }
 }

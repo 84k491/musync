@@ -28,7 +28,7 @@ class ApplicationFactory(private val initialArgs: Array<String>) {
                 Error("Can't find index file in <${cwd()}> or above. You need to create one first with 'init'"))
 
         return when (command) {
-            "sync" -> Pair(SyncApplication(index, args), null)
+            "sync" -> Pair(SyncApplication(index, args.firstOrNull()), null)
             "list" -> Pair(ListApplication(index, args.firstOrNull()), null)
             "space" -> Pair(SpaceApplication(index, args.firstOrNull()), null)
             "file" -> Pair(FileApplication(cwd(), index, args), null)
