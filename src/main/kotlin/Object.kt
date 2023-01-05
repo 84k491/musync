@@ -95,7 +95,7 @@ open class Object(val absolutePrefix: Path, val path: Path) {
     }
 
     open fun size(): Long {
-        return fullPath().toFile().length() + children.fold(0) {acc: Long, obj: Object -> acc + obj.size() }
+        return fullPath().toFile().length()
     }
 
     override fun toString(): String {

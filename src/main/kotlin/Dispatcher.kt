@@ -1,6 +1,6 @@
 class Dispatcher(private val source: Source, private val destinations: List<Destination>) {
 
-    fun dispatchObjects(): String? {
+    fun dispatchObjects(): Error? {
         destinations.forEach { dest ->
             dest.to_remove.addAll(dest.exclusion(listOf(source)))
             // TODO drop current path instead of "drop(1)"?
@@ -27,12 +27,12 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
 
             val toDest: Destination =
                 searchInDest.maxWithOrNull { lh, rh -> (lh.availableSpace() - rh.availableSpace()).toInt() }
-                ?: return "No destination when dispatching ${sourceFile.path}"
+                ?: return Error("No destination when dispatching ${sourceFile.path}")
 
             println("Dispatching file $sourceFile to ${toDest.fullPath()}")
             toDest.to_copy_here.add(sourceFile)
             if (toDest.availableSpace() < 0) {
-                return "No space available for dispatching ${sourceFile.fullPath()} to ${toDest.fullPath()}"
+                return Error("No space available for dispatching ${sourceFile.fullPath()} to ${toDest.fullPath()}")
             }
         }
 

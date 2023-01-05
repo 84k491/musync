@@ -2,27 +2,23 @@ import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.relativeTo
 
-abstract class Application {
-    abstract fun work(): Int
-}
-
-abstract class WorkingApplication(val cwd: Path): Application() {
-}
+abstract class Application { abstract fun work(): Error? }
+abstract class IndexedApplication(val index: Index): Application()
 
 class HelpApplication: Application() {
-    override fun work(): Int {
+    override fun work(): Error? {
         println("" +
                 "musync init: initialize (current) directory with empty index file\n" +
-                "musync list [added|removed|(default)new]: list files of the specified type\n" +
-                "musync space [added|removed|(default)new]: get size of all files with specified type\n" +
-                "musync destination [add|remove] <path(s)>: add or remove destination\n" +
-                "musync file [add|remove] <file(s)>: change permission of file(s)\n" +
+                "musync list: [added|removed|(default)new]: list files of the specified type\n" +
+                "musync space: [added|removed|(default)new]: get size of all files with specified type\n" +
+                "musync destination: [add|remove] <path(s)>: add or remove destination\n" +
+                "musync file: [add|remove] <file(s)>: change permission of file(s)\n" +
                 "musync sync: perform the synchronization (ask to copy)\n")
-        return 0 // TODO other return values?
+        return null
     }
 }
 
-class FileApplication(cwd: Path, private val args: List<String>): WorkingApplication(cwd) {
+class FileApplication(private val cwd: Path, i: Index, private val args: List<String>): IndexedApplication(i) {
     private fun decodeAction(str: String): Action? {
         return when (str) {
             "add" -> Action.Include
@@ -31,18 +27,8 @@ class FileApplication(cwd: Path, private val args: List<String>): WorkingApplica
         }
     }
 
-    override fun work(): Int {
-        val action = decodeAction(args[0])
-        if (null == action) {
-            println("Unknown action <${args[0]}>")
-            return -1
-        }
-
-        val index = Index.load(cwd)
-        if (null == index) {
-            println("Can't find index file in <$cwd> or above. You need to create one first with 'init'")
-            return -1
-        }
+    override fun work(): Error? {
+        val action = decodeAction(args[0]) ?: return Error("Unknown action <${args[0]}>")
 
         val launcher = Launcher(index)
         val files = args.drop(1)
@@ -50,10 +36,7 @@ class FileApplication(cwd: Path, private val args: List<String>): WorkingApplica
         files.forEach {
             val pathToFind = cwd.resolve(Path(it)).toAbsolutePath().normalize()
             val file = launcher.source.findByPath(pathToFind.relativeTo(launcher.source.fullPath()))
-            if (null == file) {
-                println("There is no such file: $it")
-                return@work -1
-            }
+                ?: return@work Error("There is no such file: $it")
             file.setActionRecursively(action)
         }
 
@@ -62,70 +45,55 @@ class FileApplication(cwd: Path, private val args: List<String>): WorkingApplica
             it.value != Action.Mixed
         })
         index.serialize()
-        return 0
+        return null
     }
 }
 
-class InitApplication(cwd: Path): WorkingApplication(cwd) {
-    override fun work(): Int {
+class InitApplication(private val cwd: Path): Application() {
+    override fun work(): Error? {
         val i = Index.load(cwd)
         if (null != i) {
-            println("Init failed. There is an index file already: ${i.file.path}")
-            return -1
+            return Error("Init failed. There is an index file already: ${i.file.path}")
         }
 
-        val filePath = Index.create(cwd)
-        return if (null != filePath) {
-            println("Index file created: $filePath")
-            0
-        } else {
-            println("Failed to create index file in $cwd")
-            -1
-        }
+        val filePath = Index.create(cwd) ?: return Error("Failed to create index file in $cwd")
+        println("Index file created: $filePath")
+        return null
     }
 }
 
-class SyncApplication(cwd: Path, private val args: List<String>): WorkingApplication(cwd) {
+class SyncApplication(i: Index, private val args: List<String>): IndexedApplication(i) {
     enum class SubCommand {
         Ask,
         DryRun,
         Force,
     }
 
-    override fun work(): Int {
-        val sc = if (args.isNotEmpty()) {
-             SubCommand.valueOf(args[0])
+    fun decodeSubcommand(str: String): SubCommand? {
+        // TODO make a check if args are incorrect
+        return if (args.isNotEmpty()) {
+            SubCommand.valueOf(args[0])
         }
         else {
             SubCommand.Ask
         }
-        // TODO make a check if args are incorrect
-        sync(sc)
-        return 0
     }
 
-    private fun sync(subCommand: SubCommand): Int {
-        val index = Index.load(cwd)
-        if (null == index) {
-            println("Can't find index file in <$cwd> or above. You need to create one first with 'init'")
-            return -1
-        }
+    override fun work(): Error? {
+        val scString = args[0]
+        val subCommand = decodeSubcommand(scString) ?: return Error("Unknown subcommand $scString")
 
         val launcher = Launcher(index)
 
         val dispatcher = Dispatcher(launcher.source, launcher.destinations)
-        dispatcher.dispatchObjects()?.let { println(it); return@sync -1 }
+        dispatcher.dispatchObjects()?.let { return@work it }
         dispatcher.printPlans()
 
         if (SubCommand.DryRun == subCommand) {
-            return 0
+            return null
         }
 
 //        if (SubCommand.Ask == subCommand) {
-//            // ask
-//            // if no, then return
-//            return 0
-//        }
 
         println("Removing and copying...")
         launcher.destinations.forEach { dest ->
@@ -138,11 +106,11 @@ class SyncApplication(cwd: Path, private val args: List<String>): WorkingApplica
             }
         }
 
-        return 0
+        return null
     }
 }
 
-class ListApplication(cwd: Path, private val filter: String?): WorkingApplication(cwd) {
+class ListApplication(i: Index, private val filter: String?): IndexedApplication(i) {
     private fun decodeFilter(v: String): Action? {
         return when (v) {
             "new" -> Action.Undefined
@@ -152,28 +120,18 @@ class ListApplication(cwd: Path, private val filter: String?): WorkingApplicatio
         }
     }
 
-    override fun work(): Int {
-        val action = decodeFilter(filter?:"new")
-        if (null == action) {
-            println("Unknown action <${filter}>")
-            return -1
-        }
-
-        val index = Index.load(cwd)
-        if (null == index) {
-            println("Can't find index file in <$cwd> or above. You need to create one first with 'init'")
-            return -1
-        }
+    override fun work(): Error? {
+        val action = decodeFilter(filter?:"new") ?: return Error("Unknown action <${filter}>")
 
         val launcher = Launcher(index)
         println("Here are the files, marked as <$action>:")
         launcher.source.all().filter { it.action == action }.forEach{ println(it.fullPath()) }
-        return 0
+        return null
     }
 }
 
-class DestinationApplication(cwd: Path, private val args: List<String>): WorkingApplication(cwd) {
-    fun decodeSubcommand(v: String): Action? {
+class DestinationApplication(i: Index, private val args: List<String>): IndexedApplication(i) {
+    private fun decodeSubcommand(v: String): Action? {
         return when (v) {
             "add" -> Action.Include
             "remove" -> Action.Exclude
@@ -181,23 +139,15 @@ class DestinationApplication(cwd: Path, private val args: List<String>): Working
         }
     }
 
-    override fun work(): Int {
-        val index = Index.load(cwd)
-        if (null == index) {
-            println("Can't find index file in <$cwd> or above. You need to create one first with 'init'")
-            return -1
-        }
-
+    override fun work(): Error? {
         if (args.isEmpty()) {
-            println("No command specified")
-            return -1
+            return Error("No command specified")
         }
 
         val action = decodeSubcommand(args.first())
         val paths = args.drop(1)
         if (paths.isEmpty()) {
-            println("No path specified")
-            return -1
+            return Error("No path specified")
         }
         // TODO check if paths exists
 
@@ -221,11 +171,11 @@ class DestinationApplication(cwd: Path, private val args: List<String>): Working
         }
 
         index.serialize()
-        return 0
+        return null
     }
 }
 
-class SpaceApplication(cwd: Path, private val filter: String?): WorkingApplication(cwd) {
+class SpaceApplication(i: Index, private val filter: String?): IndexedApplication(i) {
     private fun decodeFilter(v: String): Action? {
         return when (v) {
             "new" -> Action.Undefined
@@ -235,18 +185,8 @@ class SpaceApplication(cwd: Path, private val filter: String?): WorkingApplicati
         }
     }
 
-    override fun work(): Int {
-        val action = decodeFilter(filter?:"new")
-        if (null == action) {
-            println("Unknown action <${filter}>")
-            return -1
-        }
-
-        val index = Index.load(cwd)
-        if (null == index) {
-            println("Can't find index file in <$cwd> or above. You need to create one first with 'init'")
-            return -1
-        }
+    override fun work(): Error? {
+        val action = decodeFilter(filter?:"new") ?: return Error("Unknown action <${filter}>")
 
         val launcher = Launcher(index)
         val totalSize = launcher.source.all().filter { it.action == action }.fold(0) {
@@ -254,6 +194,6 @@ class SpaceApplication(cwd: Path, private val filter: String?): WorkingApplicati
             acc + obj.size()
         }
         println("Size of <$action>: ${totalSize / (1024 * 1024)} Mb")
-        return 0
+        return null
     }
 }
