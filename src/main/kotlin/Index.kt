@@ -11,22 +11,23 @@ class Index(val file: File) {
         fun load(cwd: Path): Index? {
             var dir = cwd
             while (0 != dir.nameCount) {
-                val filePath = dir.toFile().list()?.find { it.endsWith(filename()) }
-                if (null != filePath) {
+                val filePath = dir.resolve(filename())
+                val possibleFile = filePath.toFile()
+                if (possibleFile.exists()) {
                     // TODO make all the checks for this file here
-                    return Index(File(filePath))
+                    return Index(possibleFile)
                 }
                 dir = dir.parent
             }
             return null
         }
-        fun create(cwd: Path): String? {
+        fun create(): File? {
             val file = File(filename())
             if (!file.createNewFile()) {
                 println("Can't create an index file")
                 return null
             }
-            return file.path
+            return file
         }
         private fun filename(): String {
             return "synchronizer_index.txt"

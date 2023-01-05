@@ -56,7 +56,7 @@ class InitApplication(private val cwd: Path): Application() {
             return Error("Init failed. There is an index file already: ${i.file.path}")
         }
 
-        val filePath = Index.create(cwd) ?: return Error("Failed to create index file in $cwd")
+        val filePath = Index.create() ?: return Error("Failed to create index file in $cwd")
         println("Index file created: $filePath")
         return null
     }
@@ -69,10 +69,10 @@ class SyncApplication(i: Index, private val args: List<String>): IndexedApplicat
         Force,
     }
 
-    fun decodeSubcommand(str: String): SubCommand? {
-        // TODO make a check if args are incorrect
-        return if (args.isNotEmpty()) {
-            SubCommand.valueOf(args[0])
+    private fun decodeSubcommand(str: String?): SubCommand? {
+        // TODO make a check if arg is an incorrect command
+        return if (null != str) {
+            SubCommand.valueOf(str)
         }
         else {
             SubCommand.Ask
@@ -80,7 +80,7 @@ class SyncApplication(i: Index, private val args: List<String>): IndexedApplicat
     }
 
     override fun work(): Error? {
-        val scString = args[0]
+        val scString = args.firstOrNull()
         val subCommand = decodeSubcommand(scString) ?: return Error("Unknown subcommand $scString")
 
         val launcher = Launcher(index)
@@ -97,11 +97,11 @@ class SyncApplication(i: Index, private val args: List<String>): IndexedApplicat
 
         println("Removing and copying...")
         launcher.destinations.forEach { dest ->
-            dest.to_remove.forEach { obj ->
+            dest.toRemove.forEach { obj ->
                 obj.file().delete()
                 // TODO remove directories recursively if they are Excluded completely (don't touch Mixed)
             }
-            dest.to_copy_here.forEach { obj ->
+            dest.toCopyHere.forEach { obj ->
                 obj.file().copyTo(dest.composeTarget(obj).toFile())
             }
         }
@@ -124,7 +124,6 @@ class ListApplication(i: Index, private val filter: String?): IndexedApplication
         val action = decodeFilter(filter?:"new") ?: return Error("Unknown action <${filter}>")
 
         val launcher = Launcher(index)
-        println("Here are the files, marked as <$action>:")
         launcher.source.all().filter { it.action == action }.forEach{ println(it.fullPath()) }
         return null
     }
@@ -185,15 +184,27 @@ class SpaceApplication(i: Index, private val filter: String?): IndexedApplicatio
         }
     }
 
+    private fun printSize(bytes: Long) {
+        val sizeMb = bytes / (1024 * 1024)
+        if (0L != sizeMb) {
+            println("$sizeMb Mb")
+            return
+        }
+        val sizeKb = bytes / 1024
+        if (0L != sizeKb) {
+            println("$sizeKb Kb")
+            return
+        }
+        println("$bytes b")
+    }
+
     override fun work(): Error? {
         val action = decodeFilter(filter?:"new") ?: return Error("Unknown action <${filter}>")
-
-        val launcher = Launcher(index)
-        val totalSize = launcher.source.all().filter { it.action == action }.fold(0) {
+        val totalSize = Launcher(index).source.all().filter { it.action == action }.fold(0) {
                 acc: Long, obj: Object ->
             acc + obj.size()
         }
-        println("Size of <$action>: ${totalSize / (1024 * 1024)} Mb")
+        printSize(totalSize)
         return null
     }
 }

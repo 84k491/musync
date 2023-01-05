@@ -2,9 +2,9 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
 
     fun dispatchObjects(): Error? {
         destinations.forEach { dest ->
-            dest.to_remove.addAll(dest.exclusion(listOf(source)))
+            dest.toRemove.addAll(dest.exclusion(listOf(source)))
             // TODO drop current path instead of "drop(1)"?
-            dest.to_remove.addAll(dest.all().drop(1).filter {
+            dest.toRemove.addAll(dest.all().drop(1).filter {
                 val objAtSource = source.findByPath(it.path) ?: return@filter true
                 return@filter when (objAtSource.action) {
                     Action.Mixed, Action.Include -> false
@@ -30,7 +30,7 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
                 ?: return Error("No destination when dispatching ${sourceFile.path}")
 
             println("Dispatching file $sourceFile to ${toDest.fullPath()}")
-            toDest.to_copy_here.add(sourceFile)
+            toDest.toCopyHere.add(sourceFile)
             if (toDest.availableSpace() < 0) {
                 return Error("No space available for dispatching ${sourceFile.fullPath()} to ${toDest.fullPath()}")
             }
@@ -42,17 +42,17 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
     fun printPlans() {
         destinations.forEach{destination: Destination ->
             println("For destination: ${destination.fullPath()}:")
-            if (destination.to_remove.isNotEmpty()) {
+            if (destination.toRemove.isNotEmpty()) {
                 println("    To remove:")
-                destination.to_remove.forEach { println("        ${it.fullPath()}") }
-                val removeSize = destination.to_remove.fold(0) { acc: Long, obj: Object -> obj.size() + acc }
-                println("        In total ${destination.to_remove.size} objects, $removeSize bytes")
+                destination.toRemove.forEach { println("        ${it.fullPath()}") }
+                val removeSize = destination.toRemove.fold(0) { acc: Long, obj: Object -> obj.size() + acc }
+                println("        In total ${destination.toRemove.size} objects, $removeSize bytes")
             }
-            if (destination.to_copy_here.isNotEmpty()) {
+            if (destination.toCopyHere.isNotEmpty()) {
                 println("    To copy:")
-                destination.to_copy_here.forEach { println("        ${it.fullPath()}") }
-                val copySize = destination.to_copy_here.fold(0) { acc: Long, obj: Object -> obj.size() + acc }
-                println("        In total ${destination.to_copy_here.size} objects, $copySize bytes")
+                destination.toCopyHere.forEach { println("        ${it.fullPath()}") }
+                val copySize = destination.toCopyHere.fold(0) { acc: Long, obj: Object -> obj.size() + acc }
+                println("        In total ${destination.toCopyHere.size} objects, $copySize bytes")
             }
             println("Space available: ${destination.availableSpace() / 1024} kbytes")
         }

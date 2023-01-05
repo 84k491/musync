@@ -50,19 +50,15 @@ open class Object(val absolutePrefix: Path, val path: Path) {
         action = children.drop(1).fold(children.first().action) { acc: Action, obj: Object ->
             if (acc == obj.action) acc else Action.Mixed
         }
-//        println("Updating permissions for dir: ${fullPath()}, new action: $action")
     }
 
 
     fun getTopParentPath(): Path? {
-        println("Finding top parent for $path (name count = ${path.nameCount}) ${fullPath()}")
         var currentPath = path
         while (currentPath.nameCount > 1) {
-            println("path on current interation: $currentPath")
             currentPath = currentPath.parent
         }
         val result = if (currentPath.isDirectory()) currentPath else null
-        println("Top parent is: $result")
         return result
     }
 

@@ -17,10 +17,6 @@ abstract class ObjectPool(prefix: Path): Object(prefix, Path.of(".")) {
 class Source(prefix: Path) : ObjectPool(prefix) {
     val toCopyOut = mutableListOf<Object>()
 
-    init {
-        println("Source initialized: ${super.toString()}")
-    }
-
     fun updatePermissionsGetUndef(permissions: Map<String, Action>): List<Object> {
         val undefined = mutableListOf<Object>()
         foreach { file ->
@@ -49,19 +45,15 @@ class Source(prefix: Path) : ObjectPool(prefix) {
 }
 
 class Destination(prefix: Path) : ObjectPool(prefix) {
-    val to_remove = mutableListOf<Object>()
-    val to_copy_here = mutableListOf<Object>()
-
-    init {
-        println("Destination initialized: $this, space available: ${availableSpace()}")
-    }
+    val toRemove = mutableListOf<Object>()
+    val toCopyHere = mutableListOf<Object>()
 
     fun composeTarget(obj: Object): Path {
         return absolutePrefix.resolve(obj.path).toAbsolutePath()
     }
 
     fun plannedFilesContainParent(pathToFind: Path): Boolean {
-        return null != to_copy_here.find { it.getTopParentPath() == pathToFind }
+        return null != toCopyHere.find { it.getTopParentPath() == pathToFind }
     }
 
     private fun rawAvailableSpace(): Long {
@@ -72,15 +64,15 @@ class Destination(prefix: Path) : ObjectPool(prefix) {
         return this.fold(0) {acc: Long, obj: Object -> acc + obj.size() }
     }
 
-    fun sizeAdded(): Long {
-        return to_copy_here.totalSize() - to_remove.totalSize()
+    private fun sizeAdded(): Long {
+        return toCopyHere.totalSize() - toRemove.totalSize()
     }
 
     fun availableSpace(): Long {
         return rawAvailableSpace() - sizeAdded()
     }
 
-    fun planendSize(): Long {
+    fun plannedSize(): Long {
         return size() + sizeAdded()
     }
 }
