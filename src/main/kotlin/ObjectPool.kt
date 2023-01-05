@@ -56,6 +56,10 @@ class Destination(prefix: Path) : ObjectPool(prefix) {
         println("Destination initialized: $this, space available: ${availableSpace()}")
     }
 
+    fun composeTarget(obj: Object): Path {
+        return absolutePrefix.resolve(obj.path).toAbsolutePath()
+    }
+
     fun plannedFilesContainParent(pathToFind: Path): Boolean {
         return null != to_copy_here.find { it.getTopParentPath() == pathToFind }
     }

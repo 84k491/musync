@@ -12,9 +12,10 @@ abstract class WorkingApplication(val cwd: Path): Application() {
 class HelpApplication: Application() {
     override fun work(): Int {
         println("" +
-                "musync init <path>: initialize (current) directory with empty index file \n" +
-                "musync list [added|excluded|(default)undefined]: list files of the specified type \n" +
-                "musync destination [add|remove]: add or remove destination \n" +
+                "musync init: initialize (current) directory with empty index file\n" +
+                "musync list [added|removed|(default)new]: list files of the specified type\n" +
+                "musync space [added|removed|(default)new]: get size of all files with specified type\n" +
+                "musync destination [add|remove] <path(s)>: add or remove destination\n" +
                 "musync file [add|remove] <file(s)>: change permission of file(s)\n" +
                 "musync sync: perform the synchronization (ask to copy)\n")
         return 0 // TODO other return values?
@@ -126,15 +127,16 @@ class SyncApplication(cwd: Path, private val args: List<String>): WorkingApplica
 //            return 0
 //        }
 
-        println("NOT Removing and copying...")
-//        launcher.destinations.forEach { dest ->
-//            dest.to_remove.forEach { obj ->
-//                obj.file().delete()
-//            }
-//            dest.to_copy_here.forEach { obj ->
-//                obj.file().copyTo(dest.composeTarget(obj).toFile())
-//            }
-//        }
+        println("Removing and copying...")
+        launcher.destinations.forEach { dest ->
+            dest.to_remove.forEach { obj ->
+                obj.file().delete()
+                // TODO remove directories recursively if they are Excluded completely (don't touch Mixed)
+            }
+            dest.to_copy_here.forEach { obj ->
+                obj.file().copyTo(dest.composeTarget(obj).toFile())
+            }
+        }
 
         return 0
     }
@@ -219,6 +221,39 @@ class DestinationApplication(cwd: Path, private val args: List<String>): Working
         }
 
         index.serialize()
+        return 0
+    }
+}
+
+class SpaceApplication(cwd: Path, private val filter: String?): WorkingApplication(cwd) {
+    private fun decodeFilter(v: String): Action? {
+        return when (v) {
+            "new" -> Action.Undefined
+            "added" -> Action.Include
+            "removed" -> Action.Exclude
+            else -> null
+        }
+    }
+
+    override fun work(): Int {
+        val action = decodeFilter(filter?:"new")
+        if (null == action) {
+            println("Unknown action <${filter}>")
+            return -1
+        }
+
+        val index = Index.load(cwd)
+        if (null == index) {
+            println("Can't find index file in <$cwd> or above. You need to create one first with 'init'")
+            return -1
+        }
+
+        val launcher = Launcher(index)
+        val totalSize = launcher.source.all().filter { it.action == action }.fold(0) {
+                acc: Long, obj: Object ->
+            acc + obj.size()
+        }
+        println("Size of <$action>: ${totalSize / (1024 * 1024)} Mb")
         return 0
     }
 }

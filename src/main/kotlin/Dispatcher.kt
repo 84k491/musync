@@ -17,8 +17,6 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
                 .filter { it.action == Action.Include }
         )
 
-        println("Have ${source.toCopyOut.size} files to copy from source")
-
         for (sourceFile in source.toCopyOut) {
             val destinationsWithParent = destinations.filter { dest ->
                 sourceFile.getTopParentPath()?.let { topParentPath ->

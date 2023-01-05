@@ -27,7 +27,7 @@ open class Object(val absolutePrefix: Path, val path: Path) {
         }
     }
 
-    private fun file(): File {
+    fun file(): File {
         return fullPath().toFile()
     }
 
