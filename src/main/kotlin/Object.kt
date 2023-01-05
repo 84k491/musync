@@ -19,11 +19,10 @@ open class Object(val absolutePrefix: Path, val path: Path) {
             children.forEach{ it.setActionRecursively(v) }
         }
         if (action != v) {
-            println("Setting action $v for file: ${fullPath()}")
             action = v
         }
         else {
-            println("Nothing to change for file: ${fullPath()}")
+            println("File ${fullPath()} already marked with this policy")
         }
     }
 
@@ -36,7 +35,6 @@ open class Object(val absolutePrefix: Path, val path: Path) {
     }
 
     fun updateDirPermissions() {
-//        println("Starting to update dir permissions for ${fullPath()}")
         if (!isDirectory()) {
             return
         }

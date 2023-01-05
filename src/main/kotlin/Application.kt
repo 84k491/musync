@@ -139,6 +139,7 @@ class SyncApplication(i: Index, private val inputStr: String?): IndexedApplicati
             SubCommand.Force -> { /*continue*/ }
         }
 
+        // TODO Don't print this if there is noting to do
         println("Removing and copying...")
         launcher.destinations.forEach { dest ->
             dest.toRemove.forEach { obj ->
