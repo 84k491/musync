@@ -3,6 +3,7 @@ import java.nio.file.Path
 import kotlin.io.path.isDirectory
 import kotlin.io.path.relativeTo
 
+const val allocationUnitSize = 4096
 // TODO rename FileExt
 open class Object(val absolutePrefix: Path, val path: Path) {
     var action = Action.Undefined
@@ -89,12 +90,14 @@ open class Object(val absolutePrefix: Path, val path: Path) {
         }
     }
 
-    open fun size(): Long {
-        return fullPath().toFile().length()
+    open fun sizeOnDisk(): Long {
+        val size = fullPath().toFile().length()
+        val onDisk = size + (allocationUnitSize - size % allocationUnitSize)
+        return onDisk
     }
 
     override fun toString(): String {
         val type = if (isDirectory()) "dir" else "file"
-        return "Object: {${fullPath()}; $type; size = ${size()}}"
+        return "Object: {${fullPath()}; $type; size = ${sizeOnDisk()}}"
     }
 }

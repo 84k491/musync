@@ -35,7 +35,8 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
 
             toDest.toCopyHere.add(sourceFile)
             if (toDest.availableSpace() < 0) {
-                return Error("No space available for dispatching ${sourceFile.fullPath()} to ${toDest.fullPath()}")
+                return Error("No space available for dispatching ${sourceFile.fullPath()} to ${toDest.fullPath()}; " +
+                        "Need ${-toDest.availableSpace()} more")
             }
         }
 
@@ -48,13 +49,13 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
             if (destination.toRemove.isNotEmpty()) {
                 println("    To remove:")
                 destination.toRemove.forEach { println("        ${it.fullPath()}") }
-                val removeSize = destination.toRemove.fold(0) { acc: Long, obj: Object -> obj.size() + acc }
+                val removeSize = destination.toRemove.fold(0) { acc: Long, obj: Object -> obj.sizeOnDisk() + acc }
                 println("        In total ${destination.toRemove.size} objects, $removeSize bytes")
             }
             if (destination.toCopyHere.isNotEmpty()) {
                 println("    To copy:")
                 destination.toCopyHere.forEach { println("        ${it.fullPath()}") }
-                val copySize = destination.toCopyHere.fold(0) { acc: Long, obj: Object -> obj.size() + acc }
+                val copySize = destination.toCopyHere.fold(0) { acc: Long, obj: Object -> obj.sizeOnDisk() + acc }
                 println("        In total ${destination.toCopyHere.size} objects, $copySize bytes")
             }
             println("Space left: ${destination.availableSpace() / 1024} kbytes")

@@ -6,12 +6,12 @@ abstract class Application {
     abstract fun work(): Error?
 
     protected fun sizeAsString(bytes: Long): String {
-        val sizeMb = bytes / (1024 * 1024)
-        if (0L != sizeMb) {
+        val sizeMb = bytes.toDouble() / (1024 * 1024)
+        if (sizeMb > 1) {
             return "$sizeMb Mb"
         }
-        val sizeKb = bytes / 1024
-        if (0L != sizeKb) {
+        val sizeKb = bytes.toDouble() / 1024
+        if (sizeKb > 1) {
             return "$sizeKb Kb"
         }
         return "$bytes b"
@@ -134,20 +134,37 @@ class SyncApplication(i: Index, private val inputStr: String?): IndexedApplicati
         dispatcher.printPlans()
 
         when (subCommand) {
+            // TODO implement asking
             SubCommand.Ask -> { println("Doing nothing. Use '--force' flag to remove and copy files"); return null }
             SubCommand.DryRun -> { return null }
             SubCommand.Force -> { /*continue*/ }
         }
 
-        // TODO Don't print this if there is noting to do
-        println("Removing and copying...")
+        val copyStrategy: MutableList<()->Unit> = mutableListOf()
+        val removeStrategy: MutableList<()->Unit> = mutableListOf()
         launcher.destinations.forEach { dest ->
-            dest.toRemove.forEach { obj ->
-                obj.file().delete()
-                // TODO remove directories recursively if they are Excluded completely (don't touch Mixed)
-            }
-            dest.toCopyHere.forEach { obj ->
+            // TODO remove directories recursively if they are Excluded completely (don't touch Mixed)
+            removeStrategy.addAll(dest.toRemove.map { obj -> { obj.file().delete() } })
+            copyStrategy.addAll(dest.toCopyHere.map { obj -> {
                 obj.file().copyTo(dest.composeTarget(obj).toFile())
+            } })
+        }
+
+        if (copyStrategy.isEmpty() && removeStrategy.isEmpty()) {
+            println("No files to copy or remove");
+        }
+        if (removeStrategy.isNotEmpty()) {
+            println("Removing...")
+            removeStrategy.forEachIndexed { i, cb ->
+                println("${i + 1}/${removeStrategy.size}");
+                cb()
+            }
+        }
+        if (copyStrategy.isNotEmpty()) {
+            println("Copying...")
+            copyStrategy.forEachIndexed { i, cb ->
+                println("${i + 1}/${copyStrategy.size}");
+                cb()
             }
         }
 
@@ -233,7 +250,7 @@ class SpaceApplication(i: Index, private val filter: String?): IndexedApplicatio
         val action = decodeFilter(filter?:"new") ?: return Error("Unknown action <${filter}>")
         val totalSize = Launcher(index).source.all().filter { it.action == action }.fold(0) {
                 acc: Long, obj: Object ->
-            acc + obj.size()
+            acc + obj.sizeOnDisk()
         }
         println(sizeAsString(totalSize))
         return null

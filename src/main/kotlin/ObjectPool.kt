@@ -56,12 +56,12 @@ class Destination(prefix: Path) : ObjectPool(prefix) {
         return null != toCopyHere.find { it.getTopParentPath() == pathToFind }
     }
 
-    private fun rawAvailableSpace(): Long {
+    fun rawAvailableSpace(): Long {
         return fullPath().toFile().usableSpace
     }
 
     private fun List<Object>.totalSize(): Long {
-        return this.fold(0) {acc: Long, obj: Object -> acc + obj.size() }
+        return this.fold(0) { acc: Long, obj: Object -> acc + obj.sizeOnDisk() }
     }
 
     private fun sizeAdded(): Long {
@@ -70,10 +70,6 @@ class Destination(prefix: Path) : ObjectPool(prefix) {
 
     fun availableSpace(): Long {
         return rawAvailableSpace() - sizeAdded()
-    }
-
-    fun plannedSize(): Long {
-        return size() + sizeAdded()
     }
 }
 
