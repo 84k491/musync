@@ -14,6 +14,7 @@ algo: get files in pool with all "new" permissions, read file, deserialize it to
 */
 
 fun main(args: Array<String>) {
+    // TODO add file counter on copy
     val (app, initErr) = ApplicationFactory(args).buildApp()
     val appErr = app?.work()
     initErr?.let { println("Init error: ${it.message}") }

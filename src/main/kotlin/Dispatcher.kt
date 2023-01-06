@@ -18,9 +18,13 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
         )
 
         for (sourceFile in source.toCopyOut) {
+            // TODO check for all parents, not only top one
             val destinationsWithParent = destinations.filter { dest ->
-                sourceFile.getTopParentPath()?.let { topParentPath ->
-                    null != dest.findByPath(topParentPath) || dest.plannedFilesContainParent(topParentPath)
+                val tpp =  sourceFile.getTopParentPath();
+                tpp?.let { topParentPath ->
+                    val hasParentInDest = null != dest.findByPath(topParentPath)
+                    val hasParentInPlans = dest.plannedFilesContainParent(topParentPath)
+                    hasParentInDest || hasParentInPlans
                 } ?:false
             }
             val searchInDest = destinationsWithParent.ifEmpty { destinations }

@@ -56,7 +56,8 @@ open class Object(val absolutePrefix: Path, val path: Path) {
         while (currentPath.nameCount > 1) {
             currentPath = currentPath.parent
         }
-        val result = if (currentPath.isDirectory()) currentPath else null
+        val absolutePath = absolutePrefix.resolve(currentPath)
+        val result = if (absolutePath.isDirectory()) currentPath else null
         return result
     }
 
