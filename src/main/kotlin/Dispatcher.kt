@@ -17,6 +17,19 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
                 .filter { it.action == Action.Include }
         )
 
+        fun destWithMaxSpace(destinations: List<Destination>): Destination? {
+            var res: Destination? = null
+            var maxSize = 0L
+            destinations.forEach {
+                val currentSize = it.availableSpace().bytes()
+                if (currentSize > maxSize) {
+                    maxSize = currentSize
+                    res = it
+                }
+            }
+            return res
+        }
+
         for (sourceFile in source.toCopyOut) {
             // TODO check for all parents, not only top one
             val destinationsWithParent = destinations.filter { dest ->
@@ -30,13 +43,12 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
             val searchInDest = destinationsWithParent.ifEmpty { destinations }
 
             val toDest: Destination =
-                searchInDest.maxWithOrNull { lh, rh -> (lh.availableSpace() - rh.availableSpace()).toInt() }
+                destWithMaxSpace(searchInDest)
                 ?: return Error("No destination when dispatching ${sourceFile.path}")
 
             toDest.toCopyHere.add(sourceFile)
-            if (toDest.availableSpace() < 0) {
-                return Error("No space available for dispatching ${sourceFile.fullPath()} to ${toDest.fullPath()}; " +
-                        "Need ${-toDest.availableSpace()} more")
+            if (toDest.availableSpace().bytes() < 0) {
+                return Error("No space available for dispatching ${sourceFile.fullPath()} to ${toDest.fullPath()}; ")
             }
         }
 
@@ -49,16 +61,20 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
             if (destination.toRemove.isNotEmpty()) {
                 println("    To remove:")
                 destination.toRemove.forEach { println("        ${it.fullPath()}") }
-                val removeSize = destination.toRemove.fold(0) { acc: Long, obj: Object -> obj.sizeOnDisk() + acc }
-                println("        In total ${destination.toRemove.size} objects, $removeSize bytes")
+                val removeSize = destination.toRemove.fold(FileSize(0)) {
+                        acc: FileSize, obj: Object -> obj.size().onDisk() + acc
+                }
+                println("        In total ${destination.toRemove.size} objects, $removeSize")
             }
             if (destination.toCopyHere.isNotEmpty()) {
                 println("    To copy:")
                 destination.toCopyHere.forEach { println("        ${it.fullPath()}") }
-                val copySize = destination.toCopyHere.fold(0) { acc: Long, obj: Object -> obj.sizeOnDisk() + acc }
-                println("        In total ${destination.toCopyHere.size} objects, $copySize bytes")
+                val copySize = destination.toCopyHere.fold(FileSize(0)) {
+                        acc: FileSize, obj: Object -> obj.size().onDisk() + acc
+                }
+                println("        In total ${destination.toCopyHere.size} objects, $copySize")
             }
-            println("Space left: ${destination.availableSpace() / 1024} kbytes")
+            println("Space left: ${destination.availableSpace()}")
         }
     }
 }

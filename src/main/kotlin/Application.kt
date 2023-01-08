@@ -5,18 +5,6 @@ import kotlin.io.path.relativeTo
 abstract class Application {
     abstract fun work(): Error?
 
-    protected fun sizeAsString(bytes: Long): String {
-        val sizeMb = bytes.toDouble() / (1024 * 1024)
-        if (sizeMb > 1) {
-            return "$sizeMb Mb"
-        }
-        val sizeKb = bytes.toDouble() / 1024
-        if (sizeKb > 1) {
-            return "$sizeKb Kb"
-        }
-        return "$bytes b"
-    }
-
 }
 abstract class IndexedApplication(val index: Index): Application()
 
@@ -61,7 +49,10 @@ class HelpApplication: Application() {
 }
 
 class FileApplication(private val cwd: Path, i: Index, private val args: List<String>): IndexedApplication(i) {
-    private fun decodeAction(str: String): Action? {
+    private fun decodeAction(str: String?): Action? {
+        if (null == str) {
+            return null
+        }
         return when (str) {
             "add" -> Action.Include
             "remove" -> Action.Exclude
@@ -74,7 +65,8 @@ class FileApplication(private val cwd: Path, i: Index, private val args: List<St
 
         val launcher = Launcher(index)
         val files = args.drop(1)
-        // TODO use undefined if empty
+        // TODO there is no need to set up the whole source.
+        // create a path, check if it exists, walk and apply the action if it's a directory, push new policies
         files.forEach {
             val pathToFind = cwd.resolve(Path(it)).toAbsolutePath().normalize()
             val file = launcher.source.findByPath(pathToFind.relativeTo(launcher.source.fullPath()))
@@ -248,11 +240,11 @@ class SpaceApplication(i: Index, private val filter: String?): IndexedApplicatio
 
     override fun work(): Error? {
         val action = decodeFilter(filter?:"new") ?: return Error("Unknown action <${filter}>")
-        val totalSize = Launcher(index).source.all().filter { it.action == action }.fold(0) {
-                acc: Long, obj: Object ->
-            acc + obj.sizeOnDisk()
+        val totalSize = Launcher(index).source.all().filter { it.action == action }.fold(FileSize(0)) {
+                acc: FileSize, obj: Object ->
+            acc + obj.size().onDisk()
         }
-        println(sizeAsString(totalSize))
+        println(totalSize)
         return null
     }
 }

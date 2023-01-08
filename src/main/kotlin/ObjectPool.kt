@@ -47,6 +47,7 @@ class Source(prefix: Path) : ObjectPool(prefix) {
 class Destination(prefix: Path) : ObjectPool(prefix) {
     val toRemove = mutableListOf<Object>()
     val toCopyHere = mutableListOf<Object>()
+    private val initialAvailableSpace = FileSize(fullPath().toFile().usableSpace)
 
     fun composeTarget(obj: Object): Path {
         return absolutePrefix.resolve(obj.path).toAbsolutePath()
@@ -56,20 +57,16 @@ class Destination(prefix: Path) : ObjectPool(prefix) {
         return null != toCopyHere.find { it.getTopParentPath() == pathToFind }
     }
 
-    fun rawAvailableSpace(): Long {
-        return fullPath().toFile().usableSpace
+    private fun List<Object>.totalSize(): FileSize {
+        return this.fold(FileSize(0)) { acc: FileSize, obj: Object -> acc + obj.size() }
     }
 
-    private fun List<Object>.totalSize(): Long {
-        return this.fold(0) { acc: Long, obj: Object -> acc + obj.sizeOnDisk() }
-    }
-
-    private fun sizeAdded(): Long {
+    private fun sizeAdded(): FileSize {
         return toCopyHere.totalSize() - toRemove.totalSize()
     }
 
-    fun availableSpace(): Long {
-        return rawAvailableSpace() - sizeAdded()
+    fun availableSpace(): FileSize {
+        return initialAvailableSpace - sizeAdded().onDisk()
     }
 }
 

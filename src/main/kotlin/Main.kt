@@ -1,20 +1,18 @@
-/*
-permission index file to be (de)serialized to map<file, permission>.
-index file is searched recursively above cwd
-fail if no index file found. Suggest to init some directory
-all paths are relative to index file
-index file is only for files, permissions for directories will be calculated live based on children files.
-recursive ls to get all the files as a tree
-permission map to update permissions
-every command will act like a new update permission map
-permissions are: Undefined, Included, Excluded for files and directories. Mixed only for directories.
-permissions for directories are used to aggregate status printout
-use Gson for serialization
-algo: get files in pool with all "new" permissions, read file, deserialize it to map, update permissions in pool
-*/
+// TODO show more info when its not enough space in destinations. How much left to copy and how much space available now. How much is dispatched already
+
+// ^^^^^^^^^^top prio
+// vvvvvvvvvvlow prio
+
+// TODO make it possible for algo to change destination if there is no space in one
+// TODO space command must be able to check show much space available at destinations per one and total
+
+// TODO add "Synced" and "NotSynced" state to know how much size to sync
+
+// TODO save more data in index file because scanning all the files every time takes too long.
+// TODO Save destination data (total space, available space) to be able to dispatch without destinations connected
+// TODO Destinations can't be not connected
 
 fun main(args: Array<String>) {
-    // TODO add file counter on copy
     val (app, initErr) = ApplicationFactory(args).buildApp()
     val appErr = app?.work()
     initErr?.let { println("Init error: ${it.message}") }
