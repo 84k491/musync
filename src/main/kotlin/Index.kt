@@ -1,10 +1,16 @@
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
 import java.io.File
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 import java.lang.Exception
+
+@Serializable
+class FileSyncState(
+    var action: Action = Action.Undefined,
+    var syncedDest: String? = null,)
 
 class Index(val file: File) {
     companion object Builder {
@@ -35,13 +41,18 @@ class Index(val file: File) {
     }
 
     val destinationPaths = mutableListOf<String>()
-    val permissions = mutableMapOf<String, Action>()
+    val permissions = mutableMapOf<String, FileSyncState>()
 
     init {
         deserialize()
     }
 
-    fun updatePermissions(updatedPermissions: Map<String, Action>) {
+    fun sourceFullPath(): Path  {
+        return file.toPath().toAbsolutePath().parent
+    }
+
+    fun overridePermissions(updatedPermissions: Map<String, FileSyncState>) {
+        // TODO merge??
         permissions.clear()
         permissions.putAll(updatedPermissions)
     }
@@ -49,8 +60,8 @@ class Index(val file: File) {
     @OptIn(ExperimentalSerializationApi::class)
     private fun deserialize() {
         try {
-            val pair: Pair<List<String>, Map<String, Action>> = Json.decodeFromStream(file.inputStream())
-            updatePermissions(pair.second) // TODO move it to init App
+            val pair: Pair<List<String>, Map<String, FileSyncState>> = Json.decodeFromStream(file.inputStream())
+            overridePermissions(pair.second) // TODO move it to init App
             destinationPaths.addAll(pair.first)
         }
         catch (e: Exception) {
@@ -60,7 +71,7 @@ class Index(val file: File) {
 
     @OptIn(ExperimentalSerializationApi::class)
     fun serialize() {
-        val pair: Pair<List<String>, Map<String, Action>> = Pair(destinationPaths, permissions)
+        val pair: Pair<List<String>, Map<String, FileSyncState>> = Pair(destinationPaths, permissions)
         Json.encodeToStream(pair, file.outputStream())
     }
 }

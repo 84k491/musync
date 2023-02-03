@@ -6,6 +6,7 @@ import kotlin.io.path.relativeTo
 // TODO rename FileExt
 open class Object(val absolutePrefix: Path, val path: Path) {
     var action = Action.Undefined
+    var syncedDest: String? = null
 
     var children: List<Object> = fullPath().toFile().listFiles()?.
             map { Object(absolutePrefix, it.toPath().relativeTo(absolutePrefix)) }?: listOf()
@@ -14,9 +15,9 @@ open class Object(val absolutePrefix: Path, val path: Path) {
         return absolutePrefix.resolve(path)
     }
 
-    fun setActionRecursively(v: Action) {
+    fun setActionRecursivelyDown(v: Action) {
         if (isDirectory()) {
-            children.forEach{ it.setActionRecursively(v) }
+            children.forEach{ it.setActionRecursivelyDown(v) }
         }
         if (action != v) {
             action = v

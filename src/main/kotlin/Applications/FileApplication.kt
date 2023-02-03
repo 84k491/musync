@@ -17,21 +17,26 @@ class FileApplication(private val cwd: Path, i: Index, private val args: List<St
     override fun work(): Error? {
         val action = decodeAction(args[0]) ?: return Error("Unknown action <${args[0]}>")
 
-        val launcher = Launcher(index)
-        val files = args.drop(1)
-        // TODO there is no need to set up the whole source.
-        // create a path, check if it exists, walk and apply the action if it's a directory, push new policies
-        files.forEach {
-            val pathToFind = cwd.resolve(Path(it)).toAbsolutePath().normalize()
-            val file = launcher.source.findByPath(pathToFind.relativeTo(launcher.source.fullPath()))
-                ?: return@work Error("There is no such file: $it")
-            file.setActionRecursively(action)
+        val inputFiles = args.drop(1).asSequence().map { cwd.resolve(Path(it)).toAbsolutePath().normalize() }
+        inputFiles.forEach { if (!it.toFile().exists()) { return@work Error("There is no such file: $it")} }
+
+        // TODO create paths in one place! // make an object factory with index?
+        val inputObjects = inputFiles.map { Object(index.sourceFullPath(), it.relativeTo(index.sourceFullPath())) }
+
+        val objectsToUpdate = inputObjects.map { it.all() }.flatten()
+        objectsToUpdate.forEach {
+            val state = index.permissions[it.path.toString()]
+            it.action = state?.action ?: Action.Undefined
+            it.syncedDest = state?.syncedDest
+
+            if (action != it.action) {
+                it.syncedDest = null
+            }
+            it.action = action
         }
 
-        index.updatePermissions(launcher.source.getPermissions().filter {
-            it.value != Action.Undefined &&
-                    it.value != Action.Mixed
-        })
+        val newPermissions = objectsToUpdate.associate { Pair(it.path.toString(), FileSyncState(action)) }
+        index.permissions.putAll(newPermissions)
         index.serialize()
         return null
     }

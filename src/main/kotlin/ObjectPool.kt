@@ -17,12 +17,13 @@ abstract class ObjectPool(prefix: Path): Object(prefix, Path.of(".")) {
 class Source(prefix: Path) : ObjectPool(prefix) {
     val toCopyOut = mutableListOf<Object>()
 
-    fun updatePermissionsGetUndef(permissions: Map<String, Action>): List<Object> {
+    fun updatePermissionsGetUndef(permissions: Map<String, FileSyncState>): List<Object> {
         val undefined = mutableListOf<Object>()
         foreach { file ->
             permissions[file.path.toString()].let { perm ->
                 if (null != perm) {
-                    file.action = perm
+                    file.action = perm.action
+                    file.syncedDest = perm.syncedDest
                 }
                 else {
                     undefined.add(file)
@@ -35,12 +36,10 @@ class Source(prefix: Path) : ObjectPool(prefix) {
         return undefined
     }
 
-    fun getPermissions(): Map<String, Action> {
-        return all().filter { !it.isDirectory() }.associateBy ( {it.path.toString()}, {it.action} )
-    }
-
-    fun excluded(): List<Object> {
-        return all().filter { it.action == Action.Exclude }
+    fun getPermissions(): Map<String, FileSyncState> { // TODO remove unused
+        return all().filter { !it.isDirectory() }.associateBy (
+            {it.path.toString()}, {FileSyncState(it.action, it.syncedDest)}
+        )
     }
 }
 
