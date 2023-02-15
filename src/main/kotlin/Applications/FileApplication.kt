@@ -21,18 +21,17 @@ class FileApplication(private val cwd: Path, i: Index, private val args: List<St
         inputFiles.forEach { if (!it.toFile().exists()) { return@work Error("There is no such file: $it")} }
 
         // TODO create paths in one place! // make an object factory with index?
-        val inputObjects = inputFiles.map { Object(index.sourceFullPath(), it.relativeTo(index.sourceFullPath())) }
+        val inputObjects =
+            inputFiles.map { FileWrapper(index.getSource().fullPath(), it.relativeTo(index.getSource().fullPath())) }
 
         val objectsToUpdate = inputObjects.map { it.all() }.flatten()
         objectsToUpdate.forEach {
             val state = index.permissions[it.path.toString()]
-            it.action = state?.action ?: Action.Undefined
-            it.isSynced = state?.synced ?: false
 
             if (action != it.action) {
-                it.isSynced = false
+                it.setActionRecursivelyDown(state?.action ?: Action.Undefined)
+                it.resetSyncRecursivelyDown()
             }
-            it.action = action
         }
 
         val newPermissions = objectsToUpdate.associate { it.path.toString() to FileSyncState(action) }

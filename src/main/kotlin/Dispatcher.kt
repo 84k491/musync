@@ -63,7 +63,7 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
                 println("    To remove:")
                 destination.toRemove.forEach { println("        ${it.fullPath()}") }
                 val removeSize = destination.toRemove.fold(FileSize(0)) {
-                        acc: FileSize, obj: Object -> obj.size().onDisk() + acc
+                        acc: FileSize, obj: FileWrapper -> obj.size().onDisk() + acc
                 }
                 println("        In total ${destination.toRemove.size} objects, $removeSize")
             }
@@ -71,7 +71,7 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
                 println("    To copy:")
                 destination.toCopyHere.forEach { println("        ${it.fullPath()}") }
                 val copySize = destination.toCopyHere.fold(FileSize(0)) {
-                        acc: FileSize, obj: Object -> obj.size().onDisk() + acc
+                        acc: FileSize, obj: FileWrapper -> obj.size().onDisk() + acc
                 }
                 println("        In total ${destination.toCopyHere.size} objects, $copySize")
             }

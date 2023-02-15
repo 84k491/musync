@@ -28,6 +28,7 @@ class ApplicationFactory(private val initialArgs: Array<String>) {
 
         return when (command) {
             "sync" -> Pair(SyncApplication(index, args.firstOrNull()), null)
+            "scan" -> Pair(ScanApplication(index), null)
             "list" -> Pair(ListApplication(index, args.firstOrNull()), null)
             "space" -> Pair(SpaceApplication(index, args.firstOrNull()), null)
             "file" -> Pair(FileApplication(cwd(), index, args), null)

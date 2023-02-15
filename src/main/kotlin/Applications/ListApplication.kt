@@ -9,10 +9,9 @@ class ListApplication(i: Index, private val filter: String?): IndexedApplication
     }
 
     override fun work(): Error? {
-        val action = decodeFilter(filter?:"new") ?: return Error("Unknown action <${filter}>")
+        val action = decodeFilter(filter ?: "new") ?: return Error("Unknown action <${filter}>")
 
-        val launcher = Launcher(index)
-        launcher.source.all().filter { it.action == action }.forEach{ println(it.fullPath()) }
+        index.getSource().all().filter { it.action == action }.forEach{ println(it.fullPath()) }
         return null
     }
 }

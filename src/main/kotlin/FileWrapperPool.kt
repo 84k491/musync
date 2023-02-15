@@ -1,7 +1,7 @@
 import java.nio.file.Path
 
-abstract class ObjectPool(prefix: Path): Object(prefix, Path.of(".")) {
-    fun exclusion(others: List<ObjectPool>): List<Object> {
+abstract class FileWrapperPool(prefix: Path): FileWrapper(prefix, Path.of(".")) {
+    fun exclusion(others: List<FileWrapperPool>): List<FileWrapper> {
         // TODO drop current path instead of "drop(1)"?
         val ex = all().drop(1).filter { thisObject ->
             others.fold(true) {acc, objectPool ->
@@ -14,11 +14,11 @@ abstract class ObjectPool(prefix: Path): Object(prefix, Path.of(".")) {
     }
 }
 
-class Source(prefix: Path) : ObjectPool(prefix) {
-    val toCopyOut = mutableListOf<Object>()
+class Source(prefix: Path) : FileWrapperPool(prefix) {
+    val toCopyOut = mutableListOf<FileWrapper>()
 
-    fun updatePermissionsGetUndef(permissions: Map<String, FileSyncState>): List<Object> {
-        val undefined = mutableListOf<Object>()
+    fun updatePermissionsGetUndef(permissions: Map<String, FileSyncState>): List<FileWrapper> {
+        val undefined = mutableListOf<FileWrapper>()
         foreach { file ->
             permissions[file.path.toString()].let { perm ->
                 if (null != perm) {
@@ -37,12 +37,12 @@ class Source(prefix: Path) : ObjectPool(prefix) {
     }
 }
 
-class Destination(prefix: Path) : ObjectPool(prefix) {
-    val toRemove = mutableListOf<Object>()
-    val toCopyHere = mutableListOf<Object>()
+class Destination(prefix: Path) : FileWrapperPool(prefix) {
+    val toRemove = mutableListOf<FileWrapper>()
+    val toCopyHere = mutableListOf<FileWrapper>()
     private val initialAvailableSpace = FileSize(fullPath().toFile().usableSpace)
 
-    fun composeTarget(obj: Object): Path {
+    fun composeTarget(obj: FileWrapper): Path {
         return absolutePrefix.resolve(obj.path).toAbsolutePath()
     }
 
@@ -50,8 +50,8 @@ class Destination(prefix: Path) : ObjectPool(prefix) {
         return null != toCopyHere.find { it.getTopParentPath() == pathToFind }
     }
 
-    private fun List<Object>.totalSize(): FileSize {
-        return this.fold(FileSize(0)) { acc: FileSize, obj: Object -> acc + obj.size() }
+    private fun List<FileWrapper>.totalSize(): FileSize {
+        return this.fold(FileSize(0)) { acc: FileSize, obj: FileWrapper -> acc + obj.size() }
     }
 
     private fun sizeAdded(): FileSize {

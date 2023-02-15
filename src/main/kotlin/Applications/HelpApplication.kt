@@ -6,6 +6,8 @@ class HelpApplication: Application() {
                 "Usage:\n" +
                 "musync init: initialize (current) directory with empty index file\n" +
                 "\n" +
+                "musync scan: <todo describe>\n" +
+                "\n" +
                 "musync file [flag] <file(s)>: change policy for files\n" +
                 "            |\n" +
                 "            |-> add : Mark file as wanted to be present at destinations\n" +

@@ -3,13 +3,12 @@ import java.nio.file.Path
 import kotlin.io.path.isDirectory
 import kotlin.io.path.relativeTo
 
-// TODO rename FileExt
-open class Object(val absolutePrefix: Path, val path: Path) {
+open class FileWrapper(val absolutePrefix: Path, val path: Path) {
     var action = Action.Undefined
     var isSynced = false
 
-    var children: List<Object> = fullPath().toFile().listFiles()?.
-            map { Object(absolutePrefix, it.toPath().relativeTo(absolutePrefix)) }?: listOf()
+    var children: List<FileWrapper> = fullPath().toFile().listFiles()?.
+            map { FileWrapper(absolutePrefix, it.toPath().relativeTo(absolutePrefix)) }?: listOf()
 
     fun fullPath(): Path {
         return absolutePrefix.resolve(path)
@@ -31,11 +30,18 @@ open class Object(val absolutePrefix: Path, val path: Path) {
         }
     }
 
+    fun resetSyncRecursivelyDown() {
+        if (isDirectory()) {
+            children.forEach{ it.resetSyncRecursivelyDown() }
+        }
+        isSynced = false
+    }
+
     fun file(): File {
         return fullPath().toFile()
     }
 
-    fun isDirectory(): Boolean {
+    private fun isDirectory(): Boolean {
         return file().isDirectory
     }
 
@@ -50,7 +56,7 @@ open class Object(val absolutePrefix: Path, val path: Path) {
 
         children.forEach{ if (it.isDirectory()) it.updateDirPermissions() }
 
-        action = children.drop(1).fold(children.first().action) { acc: Action, obj: Object ->
+        action = children.drop(1).fold(children.first().action) { acc: Action, obj: FileWrapper ->
             if (acc == obj.action) acc else Action.Mixed
         }
     }
@@ -66,8 +72,8 @@ open class Object(val absolutePrefix: Path, val path: Path) {
         return result
     }
 
-    fun findByPath(path: Path): Object? {
-        val checkSingleObject = { it: Object ->
+    fun findByPath(path: Path): FileWrapper? {
+        val checkSingleObject = { it: FileWrapper ->
             it.path == path
         }
 
@@ -80,14 +86,14 @@ open class Object(val absolutePrefix: Path, val path: Path) {
         }
     }
 
-    fun all(): List<Object> {
-        val res = mutableListOf<Object>()
+    fun all(): List<FileWrapper> {
+        val res = mutableListOf<FileWrapper>()
         foreach { res.add(it) }
         return res
     }
 
 //     TODO is it still needed? There is "all()" method
-    fun foreach(cb: (Object) -> Unit) {
+    fun foreach(cb: (FileWrapper) -> Unit) {
         cb(this)
         if (isDirectory()) {
             children.forEach{ it.foreach(cb) }

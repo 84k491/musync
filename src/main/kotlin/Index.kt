@@ -73,8 +73,12 @@ class Index(val file: File) {
         deserialize()
     }
 
-    fun sourceFullPath(): Path  {
-        return file.toPath().toAbsolutePath().parent
+    fun getSource(): Source {
+        return Source(file.toPath().toAbsolutePath().parent)
+    }
+
+    fun getDestinations(): List<Destination> {
+        return destinationPaths.map { Destination(Path.of(it)) }
     }
 
     fun setNewPermissions(updatedPermissions: Map<String, FileSyncState>) {

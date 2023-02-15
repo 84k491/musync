@@ -21,9 +21,8 @@ class SyncApplication(i: Index, private val inputStr: String?): IndexedApplicati
     override fun work(): Error? {
         val subCommand = decodeSubcommand(inputStr) ?: return Error("Unknown subcommand $inputStr")
 
-        val launcher = Launcher(index)
-
-        val dispatcher = Dispatcher(launcher.source, launcher.destinations)
+        val destinations = index.getDestinations()
+        val dispatcher = Dispatcher(index.getSource(), destinations)
         dispatcher.dispatchObjects()?.let { return@work it }
         dispatcher.printPlans()
 
@@ -36,7 +35,7 @@ class SyncApplication(i: Index, private val inputStr: String?): IndexedApplicati
 
         val copyStrategy: MutableList<()->Unit> = mutableListOf()
         val removeStrategy: MutableList<()->Unit> = mutableListOf()
-        launcher.destinations.forEach { dest ->
+        destinations.forEach { dest ->
             // TODO remove directories recursively if they are Excluded completely (don't touch Mixed)
             removeStrategy.addAll(dest.toRemove.map { obj -> { obj.file().delete() } })
             copyStrategy.addAll(dest.toCopyHere.map { obj -> {

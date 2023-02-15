@@ -10,8 +10,8 @@ class SpaceApplication(i: Index, private val filter: String?): IndexedApplicatio
 
     override fun work(): Error? {
         val action = decodeFilter(filter?:"new") ?: return Error("Unknown action <${filter}>")
-        val totalSize = Launcher(index).source.all().filter { it.action == action }.fold(FileSize(0)) {
-                acc: FileSize, obj: Object ->
+        val totalSize = index.getSource().all().filter { it.action == action }.fold(FileSize(0)) {
+                acc: FileSize, obj: FileWrapper ->
             acc + obj.size().onDisk()
         }
         println(totalSize)

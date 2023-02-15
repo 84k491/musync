@@ -1,11 +1,10 @@
 import java.nio.file.Path
 
-class ScanApplication(private val cwd: Path, i: Index, private val args: List<String>): IndexedApplication(i) {
+class ScanApplication(i: Index): IndexedApplication(i) {
 
-    private val launcher = Launcher(index)
-    private val destinations = launcher.destinations
+    private val destinations = index.getDestinations()
     private val ignoreDestinations = destinations.fold(true) { acc, it -> acc && !it.exists() }
-    private val sourceFiles = launcher.source.all()
+    private val sourceFiles = index.getSource().all()
 
     init {
         if (ignoreDestinations) {
@@ -26,24 +25,27 @@ class ScanApplication(private val cwd: Path, i: Index, private val args: List<St
     }
 
     private fun syncSourceWithIndex(): Map<String, FileSyncState> {
-        val newIndexMapIntermediate: Map<String, FileSyncState> = index.permissions.mapValues { (filepath, state) ->
+        val newIndexMapIntermediate: Map<String, FileSyncState> =
+            index.permissions
+                .mapValues { (filepath, state) ->
             val matchedFileInSource = sourceFiles.find { it.fullPath().toString() == filepath }
             if (matchedFileInSource != null) {
                 return@mapValues state
             }
 
             if (!ignoreDestinations && containedInDests(filepath)) {
-                null
-            } else {
                 FileSyncState(Action.Exclude, false)
+            } else {
+                null
             }
-        }.mapNotNull { (k, v) -> v?.let { k to v } }.toMap()
+        }.mapNotNull { (key, value) -> value?.let { key to value } }.toMap()
 
-        return newIndexMapIntermediate +
+        val result = newIndexMapIntermediate +
                 sourceFiles
                     .map { it.path.toString() }
-                    .filter { newIndexMapIntermediate.containsKey(it) }
+                    .filter { !newIndexMapIntermediate.containsKey(it) }
                     .associateWith { FileSyncState(Action.Undefined, false) }.toMutableMap()
+        return result
     }
 
     private fun syncIndexWithDestinations(newIndexMap: Map<String, FileSyncState>): Map<String, FileSyncState> {
@@ -66,7 +68,7 @@ class ScanApplication(private val cwd: Path, i: Index, private val args: List<St
             }
 
             destinations
-                .fold(listOf<Object>()) { acc, dest -> acc + dest.all() }
+                .fold(listOf<FileWrapper>()) { acc, dest -> acc + dest.all() }
                 .filter { !newIndexMap.containsKey(it.path.toString()) }
                 .associate { it.path.toString() to FileSyncState(Action.Exclude, false) }
         }
