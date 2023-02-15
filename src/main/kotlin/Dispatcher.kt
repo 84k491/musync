@@ -17,19 +17,6 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
                 .filter { it.action == Action.Include }
         )
 
-        fun destWithMaxSpace(destinations: List<Destination>): Destination? {
-            var res: Destination? = null
-            var maxSize = 0L
-            destinations.forEach {
-                val currentSize = it.availableSpace().bytes()
-                if (currentSize > maxSize) {
-                    maxSize = currentSize
-                    res = it
-                }
-            }
-            return res
-        }
-
         for (sourceFile in source.toCopyOut) {
             // TODO check for all parents, not only top one
             val destinationsWithParent = destinations.filter { dest ->
@@ -54,6 +41,20 @@ class Dispatcher(private val source: Source, private val destinations: List<Dest
 
         return null
     }
+
+    private fun destWithMaxSpace(destinations: List<Destination>): Destination? {
+        var res: Destination? = null
+        var maxSize = 0L
+        destinations.forEach {
+            val currentSize = it.availableSpace().bytes()
+            if (currentSize > maxSize) {
+                maxSize = currentSize
+                res = it
+            }
+        }
+        return res
+    }
+
 
     fun printPlans() {
         destinations.forEach{destination: Destination ->

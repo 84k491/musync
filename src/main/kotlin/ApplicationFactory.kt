@@ -1,7 +1,6 @@
 import java.nio.file.Path
 import java.nio.file.Paths
 
-// TODO rename to AppFactory
 class ApplicationFactory(private val initialArgs: Array<String>) {
     private fun cwd(): Path {
         return Paths.get("").toAbsolutePath()

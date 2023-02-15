@@ -23,7 +23,7 @@ class Source(prefix: Path) : ObjectPool(prefix) {
             permissions[file.path.toString()].let { perm ->
                 if (null != perm) {
                     file.action = perm.action
-                    file.syncedDest = perm.syncedDest
+                    file.isSynced = perm.synced
                 }
                 else {
                     undefined.add(file)
@@ -34,12 +34,6 @@ class Source(prefix: Path) : ObjectPool(prefix) {
         updateDirPermissions()
 
         return undefined
-    }
-
-    fun getPermissions(): Map<String, FileSyncState> { // TODO remove unused
-        return all().filter { !it.isDirectory() }.associateBy (
-            {it.path.toString()}, {FileSyncState(it.action, it.syncedDest)}
-        )
     }
 }
 

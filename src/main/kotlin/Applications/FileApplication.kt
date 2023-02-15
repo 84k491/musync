@@ -27,15 +27,15 @@ class FileApplication(private val cwd: Path, i: Index, private val args: List<St
         objectsToUpdate.forEach {
             val state = index.permissions[it.path.toString()]
             it.action = state?.action ?: Action.Undefined
-            it.syncedDest = state?.syncedDest
+            it.isSynced = state?.synced ?: false
 
             if (action != it.action) {
-                it.syncedDest = null
+                it.isSynced = false
             }
             it.action = action
         }
 
-        val newPermissions = objectsToUpdate.associate { Pair(it.path.toString(), FileSyncState(action)) }
+        val newPermissions = objectsToUpdate.associate { it.path.toString() to FileSyncState(action) }
         index.permissions.putAll(newPermissions)
         index.serialize()
         return null
