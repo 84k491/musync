@@ -25,7 +25,7 @@ class ListApplication(i: Index, private val filter: String?): IndexedApplication
             }
         }
 
-        files.forEach { println(it) }
+        files.forEach { println(it.path) }
         return null
     }
 }

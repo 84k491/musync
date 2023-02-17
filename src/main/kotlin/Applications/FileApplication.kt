@@ -35,7 +35,7 @@ class FileApplication(private val cwd: Path, i: Index, private val args: List<St
             .map { GhostFile(it, index) } +
                 inflatedWithFlag
         filesToProcess
-            .forEach { it.state.setAction(action) }
+            .forEach { it.setActionRecursivelyDown(action) }
 
         index.serialize()
         return null

@@ -18,6 +18,7 @@ class SyncApplication(i: Index, private val inputStr: String?): IndexedApplicati
         return subCommandMap[str]
     }
 
+    // TODO it's possible to dispatch directory to one dest and it's files to other!
     override fun work(): Error? {
         val subCommand = decodeSubcommand(inputStr) ?: return Error("Unknown subcommand $inputStr")
         val destinations = index.getDestinations()
@@ -35,8 +36,7 @@ class SyncApplication(i: Index, private val inputStr: String?): IndexedApplicati
         val copyStrategy: MutableList<()->Unit> = mutableListOf()
         val removeStrategy: MutableList<()->Unit> = mutableListOf()
         destinations.forEach { dest ->
-            // TODO remove directories recursively if they are Excluded completely (don't touch Mixed)
-            removeStrategy.addAll(dest.toRemove.map { existingDestFile ->
+            removeStrategy.addAll(dest.toRemove.asReversed().map { existingDestFile ->
                 {
                     val success = existingDestFile.file.delete()
                     GhostFile(index.getSource().absolutePrefix, existingDestFile.path, index).state.synced = success

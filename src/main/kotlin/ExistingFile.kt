@@ -1,3 +1,4 @@
+import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.relativeTo
 
@@ -34,8 +35,8 @@ open class ExistingFile(absolutePrefix: Path, path: Path, index: Index?)
         }
     }
 
-    val file by lazy { absolutePath().toFile() }
-    val isDirectory by lazy { file.isDirectory }
+    val file: File by lazy { absolutePath().toFile() }
+    private val isDirectory by lazy { file.isDirectory }
 
     override val children: List<ExistingFile> by lazy {
         absolutePath().toFile().listFiles()
