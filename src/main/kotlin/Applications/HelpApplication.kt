@@ -18,6 +18,9 @@ class HelpApplication: Application() {
                 "            |-> new : (Default). Files that are not added to index\n" +
                 "            |-> added : Files that will be copied to destinations\n" +
                 "            |-> removed : Files that mustn't present in destinations\n" +
+                "            |-> all : \n" +
+                "            |-> unsynced : \n" +
+                "            |-> synced : \n" +
                 "\n" +
                 "musync space [<optional flag] : get overall size of files with specified type\n" +
                 "             |\n" +
