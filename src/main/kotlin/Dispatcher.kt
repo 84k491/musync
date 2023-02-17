@@ -6,7 +6,7 @@ class Dispatcher(val index: Index, private val source: ExistingFile, private val
     // all files are scanned by now, no need to search for exclusions in destinations
     fun dispatchObjects(): Error? {
         val sourceFiles = index.indexedFiles()
-        val unsynced = sourceFiles.filter { !it.state.synced }
+        val unsynced = sourceFiles.filterNot { it.state.synced }
 
         val toRemoveFromDestinations = unsynced
             .filter { Action.Exclude == it.state.getAction() }
@@ -14,8 +14,11 @@ class Dispatcher(val index: Index, private val source: ExistingFile, private val
             .forEach { ghostFile ->
                 val targetDest = destinations
                     .find { dest -> null != dest.findByPath(ghostFile.path) }
-                    ?: // no need to touch anything, it's a general scenario
+                if (null == targetDest) {
+                    // we want it to be removed, but it's already removed, nothing to do, it's synced
+                    ghostFile.state.synced = true
                     return@forEach
+                }
 
                 val targetGhost = targetDest.composeTarget(ghostFile)
                 val targetFile = targetGhost.toExisting()

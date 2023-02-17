@@ -66,7 +66,10 @@ class ScanApplication(i: Index): IndexedApplication(i) {
 
         notContained.forEach {
             when (it.state.getAction()) {
-                Action.Exclude -> { it.state.synced = null != it.toExisting() }
+                Action.Exclude -> {
+                    val res = null != it.toExisting();
+                    it.state.synced = res
+                }
                 Action.Mixed -> {}
                 else -> { it.state.synced = false }
             }

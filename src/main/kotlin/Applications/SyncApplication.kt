@@ -39,9 +39,15 @@ class SyncApplication(i: Index, private val inputStr: String?): IndexedApplicati
         val removeStrategy: MutableList<()->Unit> = mutableListOf()
         destinations.forEach { dest ->
             // TODO remove directories recursively if they are Excluded completely (don't touch Mixed)
-            removeStrategy.addAll(dest.toRemove.map { existingFile -> { existingFile.file.delete() } })
-            copyStrategy.addAll(dest.toCopyHere.map { existingFile -> {
-                existingFile.file.copyTo(dest.composeTarget(existingFile).toPotentialFile())
+            removeStrategy.addAll(dest.toRemove.map { existingDestFile ->
+                {
+                    val success = existingDestFile.file.delete()
+                    GhostFile(index.getSource().absolutePrefix, existingDestFile.path, index).state.synced = success
+                }
+            })
+            copyStrategy.addAll(dest.toCopyHere.map { existingDestFile -> {
+                val success = existingDestFile.file.copyTo(dest.composeTarget(existingDestFile).toPotentialFile()).exists()
+                GhostFile(index.getSource().absolutePrefix, existingDestFile.path, index).state.synced = success
             } })
         }
 
@@ -62,6 +68,8 @@ class SyncApplication(i: Index, private val inputStr: String?): IndexedApplicati
                 cb()
             }
         }
+
+        index.serialize()
 
         return null
     }
