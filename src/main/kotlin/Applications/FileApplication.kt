@@ -13,29 +13,35 @@ class FileApplication(private val cwd: Path, i: Index, private val args: List<St
             else -> null
         }
     }
+    private val allNewFlag = "--new"
 
     override fun work(): Error? {
         val action = decodeAction(args[0]) ?: return Error("Unknown action <${args[0]}>")
 
-        val inputFiles = args.drop(1).asSequence().map { cwd.resolve(Path(it)).toAbsolutePath().normalize() }
-        inputFiles.forEach { if (!it.toFile().exists()) { return@work Error("There is no such file: $it")} }
-
-        // TODO create paths in one place! // make an object factory with index?
-        val inputObjects =
-            inputFiles.map { FileWrapper(index.getSource().fullPath(), it.relativeTo(index.getSource().fullPath())) }
-
-        val objectsToUpdate = inputObjects.map { it.all() }.flatten()
-        objectsToUpdate.forEach {
-            val state = index.permissions[it.path.toString()]
-
-            if (action != it.action) {
-                it.setActionRecursivelyDown(state?.action ?: Action.Undefined)
-                it.resetSyncRecursivelyDown()
+        println("Checking for flag..")
+        val inflatedWithFlag: Sequence<GhostFile> =
+            if (args.contains(allNewFlag)) {
+                index
+                    .indexedFiles()
+                    .filter { Action.Undefined == it.state.getAction() }
             }
-        }
+            else {
+                sequenceOf()
+            }
 
-        val newPermissions = objectsToUpdate.associate { it.path.toString() to FileSyncState(action) }
-        index.permissions.putAll(newPermissions)
+        println("Continue with regular input files")
+        val filesToProcess = args
+            .asSequence()
+            .drop(1)
+            .filter { allNewFlag != it }
+            .map { cwd.resolve(Path(it)).toAbsolutePath().normalize() }
+            .map { GhostFile(it, index) } +
+                inflatedWithFlag
+        filesToProcess
+            .forEach { it.state.setAction(action) }
+
+        println("Saving...")
+
         index.serialize()
         return null
     }

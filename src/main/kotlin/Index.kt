@@ -1,42 +1,11 @@
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.Serializable
 import java.io.File
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 import java.lang.Exception
-
-/*
-    "action" stands for what we want it to be. And "synced" marks if current state meets our expectations
-
-    present in source, absent in any dest, we want it to copy to any dest
-    {action: Include, synced = false}
-
-    present in source, present in ONE dest, we want to DO NOTHING
-    {action: Include, synced = true}
-
-    present in source, absent in any dest, we don't know what to do yet
-    {action: Undefined, synced = false}
-
-    invalid action!
-    {action: Undefined, synced = true}
-
-    present in source, absent in any dest, we DON'T want it to be at dest
-    {action: Exclude, synced = true}
-
-    ABSENT/PRESENT in source, present in one dest, we want it to be removed from dest
-    {action: Exclude, synced = false}
-
-    present in source, present in MANY dests, we want to keep just one of them // not implemented
-    absent in source, present in any dest, we want it to be copied in source // not implemented
-* */
-
-@Serializable
-class FileSyncState(
-    var action: Action = Action.Undefined,
-    var synced: Boolean = false,
-    )
+import kotlin.io.path.relativeTo
 
 class Index(val file: File) {
     companion object Builder {
@@ -73,8 +42,17 @@ class Index(val file: File) {
         deserialize()
     }
 
-    fun getSource(): Source {
-        return Source(file.toPath().toAbsolutePath().parent)
+    fun indexedFiles(): Sequence<GhostFile> {
+        return permissions
+            .map { (pathString, _) -> GhostFile(getSourceAbsolutePath(), Path.of(pathString), this) }
+            .asSequence()
+    }
+
+    fun getSource(): GhostFile {
+        return GhostFile(file.toPath().toAbsolutePath().parent, this)
+    }
+    fun getSourceAbsolutePath(): Path {
+        return file.toPath().toAbsolutePath().parent
     }
 
     fun getDestinations(): List<Destination> {
