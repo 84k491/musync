@@ -42,10 +42,6 @@ open class ExistingFile(absolutePrefix: Path, path: Path, index: Index?)
             ?.map { ExistingFile(absolutePrefix, it.toPath().relativeTo(absolutePrefix), index) } ?: listOf()
     }
 
-//    init {
-//        println("Existing file created: ${absolutePath()} with ${children.size} children")
-//    }
-
     open fun size(): FileSize {
         // TODO directories can use 0 space on disk
         val size = absolutePath().toFile().length()

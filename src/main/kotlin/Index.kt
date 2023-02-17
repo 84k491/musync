@@ -78,6 +78,7 @@ class Index(val file: File) {
 
     @OptIn(ExperimentalSerializationApi::class)
     fun serialize() {
+        listOf("", ".").forEach { permissions.remove(it) }
         val pair: Pair<List<String>, Map<String, FileSyncState>> = Pair(destinationPaths, permissions)
         Json.encodeToStream(pair, file.outputStream())
     }

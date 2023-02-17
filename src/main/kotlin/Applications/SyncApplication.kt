@@ -20,11 +20,8 @@ class SyncApplication(i: Index, private val inputStr: String?): IndexedApplicati
 
     override fun work(): Error? {
         val subCommand = decodeSubcommand(inputStr) ?: return Error("Unknown subcommand $inputStr")
-
         val destinations = index.getDestinations()
-        val source = index.getSource().toExisting()
-            ?: return Error("Source ${index.getSource().absolutePrefix} does not exist")
-        val dispatcher = Dispatcher(index, source, destinations)
+        val dispatcher = Dispatcher(index, destinations)
         dispatcher.dispatchObjects()?.let { return@work it }
 
         dispatcher.printPlans()

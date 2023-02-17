@@ -1,4 +1,4 @@
-class Dispatcher(val index: Index, private val source: ExistingFile, private val destinations: List<Destination>) {
+class Dispatcher(val index: Index, private val destinations: List<Destination>) {
 
     // general use case:
     // index file is updated recently

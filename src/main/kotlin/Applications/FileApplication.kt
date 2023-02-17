@@ -18,18 +18,15 @@ class FileApplication(private val cwd: Path, i: Index, private val args: List<St
     override fun work(): Error? {
         val action = decodeAction(args[0]) ?: return Error("Unknown action <${args[0]}>")
 
-        println("Checking for flag..")
         val inflatedWithFlag: Sequence<GhostFile> =
             if (args.contains(allNewFlag)) {
-                index
-                    .indexedFiles()
+                index.indexedFiles()
                     .filter { Action.Undefined == it.state.getAction() }
             }
             else {
                 sequenceOf()
             }
 
-        println("Continue with regular input files")
         val filesToProcess = args
             .asSequence()
             .drop(1)
@@ -39,8 +36,6 @@ class FileApplication(private val cwd: Path, i: Index, private val args: List<St
                 inflatedWithFlag
         filesToProcess
             .forEach { it.state.setAction(action) }
-
-        println("Saving...")
 
         index.serialize()
         return null

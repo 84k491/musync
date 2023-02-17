@@ -43,6 +43,7 @@ class ScanApplication(i: Index): IndexedApplication(i) {
             return
         }
         existingSource.all().toList() // create from FS and init with default state
+        index.permissions.remove(existingSource.path.toString())
     }
 
     private fun syncIndexWithDestinations() {
