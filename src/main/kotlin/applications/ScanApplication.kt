@@ -19,7 +19,7 @@ class ScanApplication(i: Index): IndexedApplication(i) {
     override fun work(): Error? {
         syncSourceWithIndex()
         syncIndexWithDestinations()
-        index.serialize()
+        index.save()
         return null
     }
 
@@ -35,7 +35,7 @@ class ScanApplication(i: Index): IndexedApplication(i) {
             .filter { null == it.toExisting() }
             .partition { ignoreDestinations || containedInDests(it.path) }
         toExclude.forEach { it.state.setAction(Action.Exclude) }
-        toRemove.forEach { index.permissions.remove(it.path.toString()) }
+        toRemove.forEach { index.permissions().remove(it.path.toString()) }
 
         val existingSource = index.getSource().toExisting()
         if (null == existingSource) {
@@ -43,7 +43,7 @@ class ScanApplication(i: Index): IndexedApplication(i) {
             return
         }
         existingSource.all().toList() // create from FS and init with default state
-        index.permissions.remove(existingSource.path.toString())
+        index.permissions().remove(existingSource.path.toString())
     }
 
     private fun syncIndexWithDestinations() {
@@ -78,7 +78,7 @@ class ScanApplication(i: Index): IndexedApplication(i) {
 
         destinations
             .fold(sequenceOf<ExistingFile>()) { acc, dest -> acc + dest.all() }
-            .filter { !index.permissions.containsKey(it.path.toString()) }
+            .filter { !index.permissions().containsKey(it.path.toString()) }
             .map { GhostFile(index.getSourceAbsolutePath(), it.path, index) }
             .forEach { it.state.setAction(Action.Exclude) }
     }

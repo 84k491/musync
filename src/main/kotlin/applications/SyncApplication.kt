@@ -66,7 +66,7 @@ class SyncApplication(i: Index, private val inputStr: String?): IndexedApplicati
             }
         }
 
-        index.serialize()
+        index.save()
 
         return null
     }

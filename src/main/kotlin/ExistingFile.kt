@@ -1,9 +1,10 @@
+import interfaces.IIndex
 import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.relativeTo
 
 // TODO make constructor private
-open class ExistingFile(absolutePrefix: Path, path: Path, index: Index?)
+open class ExistingFile(absolutePrefix: Path, path: Path, index: IIndex?)
     : GhostFile(absolutePrefix, path, index) {
 
     companion object {

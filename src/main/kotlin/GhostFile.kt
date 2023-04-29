@@ -1,8 +1,9 @@
+import interfaces.IIndex
 import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.relativeTo
 
-open class GhostFile(val absolutePrefix: Path, val path: Path, val index: Index?) {
+open class GhostFile(val absolutePrefix: Path, val path: Path, val index: IIndex?) {
 
     constructor(cliPath: Path, index: Index)
             : this(
@@ -10,11 +11,11 @@ open class GhostFile(val absolutePrefix: Path, val path: Path, val index: Index?
                 cliPath.toAbsolutePath().relativeTo(index.getSourceAbsolutePath()),
                 index)
 
-    val state = index?.permissions?.getOrPut(path.toString()) { FileSyncState() } ?: FileSyncState()
+    val state = index?.permissions()?.getOrPut(path.toString()) { FileSyncState() } ?: FileSyncState()
 
     protected open val children by lazy {
         index
-            ?.let { it.permissions
+            ?.let { it.permissions()
             .filter { (pathString, _) -> Path.of(pathString).parent == this.path }
             .map { (pathString, _) -> GhostFile(absolutePrefix, Path.of(pathString), index) }}
             ?: listOf()
@@ -31,7 +32,7 @@ open class GhostFile(val absolutePrefix: Path, val path: Path, val index: Index?
         state.setAction(v)
     }
 
-    fun resetSyncRecursivelyDown() {
+    private fun resetSyncRecursivelyDown() {
         if (children.isNotEmpty()) {
             children.forEach{ it.resetSyncRecursivelyDown() }
         }

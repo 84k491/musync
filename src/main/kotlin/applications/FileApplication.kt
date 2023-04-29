@@ -37,7 +37,7 @@ class FileApplication(private val cwd: Path, i: Index, private val args: List<St
         filesToProcess
             .forEach { it.setActionRecursivelyDown(action) }
 
-        index.serialize()
+        index.save()
         return null
     }
 }

@@ -38,7 +38,7 @@ class DestinationApplication(i: Index, private val args: List<String>): IndexedA
             callback(index.destinationPaths, it)
         }
 
-        index.serialize()
+        index.save()
         return null
     }
 }

@@ -1,3 +1,4 @@
+import interfaces.IIndex
 import kotlinx.serialization.ExperimentalSerializationApi
 import java.io.File
 import java.nio.file.Path
@@ -7,7 +8,7 @@ import kotlinx.serialization.json.encodeToStream
 import java.lang.Exception
 import kotlin.io.path.relativeTo
 
-class Index(val file: File) {
+class Index(val file: File) : IIndex {
     companion object Builder {
         fun load(cwd: Path): Index? {
             var dir = cwd
@@ -36,30 +37,34 @@ class Index(val file: File) {
     }
 
     val destinationPaths = mutableListOf<String>()
-    val permissions = mutableMapOf<String, FileSyncState>()
+    private val permissions = mutableMapOf<String, FileSyncState>()
 
     init {
         deserialize()
     }
 
-    fun indexedFiles(): Sequence<GhostFile> {
+    override fun permissions(): MutableMap<String, FileSyncState> {
+        return permissions
+    }
+
+    override fun indexedFiles(): Sequence<GhostFile> {
         return permissions
             .map { (pathString, _) -> GhostFile(getSourceAbsolutePath(), Path.of(pathString), this) }
             .asSequence()
     }
 
-    fun getSource(): GhostFile {
+    override fun getSource(): GhostFile {
         return GhostFile(file.toPath().toAbsolutePath().parent, this)
     }
-    fun getSourceAbsolutePath(): Path {
+    override fun getSourceAbsolutePath(): Path {
         return file.toPath().toAbsolutePath().parent
     }
 
-    fun getDestinations(): List<Destination> {
+    override fun getDestinations(): List<Destination> {
         return destinationPaths.map { Destination(Path.of(it)) }
     }
 
-    fun setNewPermissions(updatedPermissions: Map<String, FileSyncState>) {
+    private fun setNewPermissions(updatedPermissions: Map<String, FileSyncState>) {
         permissions.clear()
         permissions.putAll(updatedPermissions)
     }
@@ -76,8 +81,9 @@ class Index(val file: File) {
         }
     }
 
+    override fun save() { serialize() }
     @OptIn(ExperimentalSerializationApi::class)
-    fun serialize() {
+    private fun serialize() {
         listOf("", ".").forEach { permissions.remove(it) }
         val pair: Pair<List<String>, Map<String, FileSyncState>> = Pair(destinationPaths, permissions)
         Json.encodeToStream(pair, file.outputStream())
