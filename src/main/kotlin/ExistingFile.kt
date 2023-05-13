@@ -8,18 +8,6 @@ open class ExistingFile(absolutePrefix: Path, path: Path, index: IIndex?)
     : GhostFile(absolutePrefix, path, index) {
 
     companion object {
-        fun build(cliPath: Path, index: Index): ExistingFile? {
-            val absPath = cliPath.toAbsolutePath().normalize()
-            return if (absPath.toFile().exists()) {
-                ExistingFile(
-                    index.getSourceAbsolutePath(),
-                    absPath.relativeTo(index.getSourceAbsolutePath()),
-                    index
-                )
-            }
-            else null
-        }
-
         fun build(ghost: GhostFile): ExistingFile? {
             return if (ghost.absolutePath().toFile().exists()) {
                 ExistingFile(ghost.absolutePrefix, ghost.path, ghost.index)

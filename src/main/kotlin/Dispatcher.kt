@@ -1,4 +1,6 @@
-class Dispatcher(val index: Index, private val destinations: List<Destination>) {
+import interfaces.IIndex
+
+class Dispatcher(val index: IIndex, private val destinations: List<Destination>) {
 
     // general use case:
     // index file is updated recently
