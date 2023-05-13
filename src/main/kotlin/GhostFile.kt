@@ -25,10 +25,6 @@ open class GhostFile(val absolutePrefix: Path, val path: Path, val index: IIndex
         return children.isNotEmpty()
     }
 
-    fun toExisting(): ExistingFile? {
-        return ExistingFile.build(this)
-    }
-
     fun setActionRecursivelyDown(v: Action) {
         if (children.isNotEmpty()) {
             children.forEach{ it.setActionRecursivelyDown(v) }

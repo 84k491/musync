@@ -27,14 +27,13 @@ class ApplicationFactory(private val initialArgs: Array<String>) {
                 Error("Can't find index file in <${cwd()}> or above. You need to create one first with 'init'"))
 
         return when (command) {
-            "sync" -> Pair(SyncApplication(index, args.firstOrNull()), null)
-            "scan" -> Pair(ScanApplication(index), null)
+            "sync" -> Pair(SyncApplication(index, args.firstOrNull(), FilesystemGate()), null)
+            "scan" -> Pair(ScanApplication(index, FilesystemGate()), null)
             "list" -> Pair(ListApplication(index, args.firstOrNull()), null)
-            "space" -> Pair(SpaceApplication(index, args.firstOrNull()), null)
+            "space" -> Pair(SpaceApplication(index, args.firstOrNull(), FilesystemGate()), null)
             "file" -> Pair(FileApplication(cwd(), index, args), null)
             "destination" -> Pair(DestinationApplication(index, args), null)
             else -> Pair(helpCommand, Error("Unknown command: $command"))
         }
     }
-
 }

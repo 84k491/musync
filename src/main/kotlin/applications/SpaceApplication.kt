@@ -1,4 +1,6 @@
-class SpaceApplication(i: Index, private val filter: String?): IndexedApplication(i) {
+import interfaces.IFilesystemGate
+
+class SpaceApplication(i: Index, private val filter: String?, private val fileBuilder: IFilesystemGate): IndexedApplication(i) {
     private fun decodeFilter(v: String): Action? {
         return when (v) {
             "new" -> Action.Undefined
@@ -13,8 +15,8 @@ class SpaceApplication(i: Index, private val filter: String?): IndexedApplicatio
         val totalSize =
             index.getSource().all()
                 .filter { it.state.getAction() == action }
-                .mapNotNull { it: GhostFile -> it.toExisting() }
-                .fold(FileSize(0)) { acc: FileSize, file: ExistingFile ->
+                .mapNotNull { it: GhostFile -> fileBuilder.build(it) }
+                .fold(FileSize(0)) { acc: FileSize, file ->
                     acc + file.size().onDisk()
         }
         println(totalSize)

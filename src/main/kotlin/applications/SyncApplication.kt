@@ -1,4 +1,6 @@
-class SyncApplication(i: Index, private val inputStr: String?): IndexedApplication(i) {
+import interfaces.IFilesystemGate
+
+class SyncApplication(i: Index, private val inputStr: String?, private val fileBuilder: IFilesystemGate): IndexedApplication(i) {
     enum class SubCommand {
         Ask,
         DryRun,
@@ -22,7 +24,7 @@ class SyncApplication(i: Index, private val inputStr: String?): IndexedApplicati
     override fun work(): Error? {
         val subCommand = decodeSubcommand(inputStr) ?: return Error("Unknown subcommand $inputStr")
         val destinations = index.getDestinations()
-        val dispatcher = Dispatcher(index, destinations)
+        val dispatcher = Dispatcher(index, destinations, fileBuilder)
         dispatcher.dispatchObjects()?.let { return@work it }
 
         dispatcher.printPlans()
@@ -38,12 +40,12 @@ class SyncApplication(i: Index, private val inputStr: String?): IndexedApplicati
         destinations.forEach { dest ->
             removeStrategy.addAll(dest.toRemove.asReversed().map { existingDestFile ->
                 {
-                    val success = existingDestFile.file.delete()
+                    val success = fileBuilder.remove(existingDestFile)
                     GhostFile(index.getSource().absolutePrefix, existingDestFile.path, index).state.synced = success
                 }
             })
             copyStrategy.addAll(dest.toCopyHere.map { existingDestFile -> {
-                val success = existingDestFile.file.copyTo(dest.composeTarget(existingDestFile).toPotentialFile()).exists()
+                val success = fileBuilder.copy(existingDestFile, dest.composeTarget(existingDestFile))
                 GhostFile(index.getSource().absolutePrefix, existingDestFile.path, index).state.synced = success
             } })
         }

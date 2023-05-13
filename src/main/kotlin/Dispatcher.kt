@@ -1,6 +1,8 @@
+import interfaces.IExistingFile
+import interfaces.IFilesystemGate
 import interfaces.IIndex
 
-class Dispatcher(val index: IIndex, private val destinations: List<Destination>) {
+class Dispatcher(val index: IIndex, private val destinations: List<Destination>, private val fileBuilder: IFilesystemGate) {
 
     // general use case:
     // index file is updated recently
@@ -15,7 +17,7 @@ class Dispatcher(val index: IIndex, private val destinations: List<Destination>)
         toRemoveFromDestinations
             .forEach { ghostFile ->
                 val targetDest = destinations
-                    .find { dest -> null != dest.findByPath(ghostFile.path) }
+                    .find { dest -> null != dest.file.findByPath(ghostFile.path) }
                 if (null == targetDest) {
                     // we want it to be removed, but it's already removed, nothing to do, it's synced
                     ghostFile.state.synced = true
@@ -23,7 +25,7 @@ class Dispatcher(val index: IIndex, private val destinations: List<Destination>)
                 }
 
                 val targetGhost = targetDest.composeTarget(ghostFile)
-                val targetFile = targetGhost.toExisting()
+                val targetFile = fileBuilder.build(targetGhost)
 
                 if (null == targetFile) {
                     println("No file $targetGhost in $targetDest")
@@ -35,7 +37,7 @@ class Dispatcher(val index: IIndex, private val destinations: List<Destination>)
         val toCopyToDestinations = unsynced
             .filter { Action.Include == it.state.getAction() }
             .mapNotNull {
-                val e = it.toExisting()
+                val e = fileBuilder.build(it)
                 if (null == e) {
                     println("File $it does not exist!")
                 }
@@ -50,19 +52,19 @@ class Dispatcher(val index: IIndex, private val destinations: List<Destination>)
             if (targetDestination.availableSpace().bytes() < 0) {
                 return Error(
                     "No space available for dispatching " +
-                            "${sourceFile.absolutePath()} to ${targetDestination.absolutePath()}; ")
+                            "${sourceFile.absolutePath()} to ${targetDestination.file.absolutePath()}; ")
             }
         }
 
         return null
     }
 
-    private fun pickDestinationForFile(file: ExistingFile): Destination? {
+    private fun pickDestinationForFile(file: IExistingFile): Destination? {
         // TODO check for all parents, not only top one
         val destinationsWithParent = destinations.filter { dest ->
             val tpp = file.getTopParent()?.path
             tpp?.let { topParentPath ->
-                val hasParentInDest = null != dest.findByPath(topParentPath)
+                val hasParentInDest = null != dest.file.findByPath(topParentPath)
                 val hasParentInPlans = dest.plannedFilesContainParent(topParentPath)
                 hasParentInDest || hasParentInPlans
             } ?:false
@@ -87,12 +89,12 @@ class Dispatcher(val index: IIndex, private val destinations: List<Destination>)
 
     fun printPlans() {
         destinations.forEach{destination: Destination ->
-            println("For destination: ${destination.absolutePath()}:")
+            println("For destination: ${destination.file.absolutePath()}:")
             if (destination.toRemove.isNotEmpty()) {
                 println("    To remove:")
                 destination.toRemove.forEach { println("        ${it.absolutePath()}") }
                 val removeSize = destination.toRemove.fold(FileSize(0)) {
-                        acc: FileSize, obj: ExistingFile -> obj.size().onDisk() + acc
+                        acc: FileSize, file -> file.size().onDisk() + acc
                 }
                 println("        In total ${destination.toRemove.size} objects, $removeSize")
             }
@@ -100,7 +102,7 @@ class Dispatcher(val index: IIndex, private val destinations: List<Destination>)
                 println("    To copy:")
                 destination.toCopyHere.forEach { println("        ${it.absolutePath()}") }
                 val copySize = destination.toCopyHere.fold(FileSize(0)) {
-                        acc: FileSize, obj: ExistingFile -> obj.size().onDisk() + acc
+                        acc: FileSize, file -> file.size().onDisk() + acc
                 }
                 println("        In total ${destination.toCopyHere.size} objects, $copySize")
             }
