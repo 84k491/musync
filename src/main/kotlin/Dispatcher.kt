@@ -34,7 +34,7 @@ class Dispatcher(val index: IIndex, private val destinations: List<Destination>,
                 targetDest.toRemove.add(targetFile)
             }
 
-        val toCopyToDestinations = unsynced
+        val toCopyToDestinations: Sequence<IExistingFile> = unsynced
             .filter { Action.Include == it.state.getAction() }
             .mapNotNull {
                 val e = fileBuilder.build(it)
@@ -50,9 +50,13 @@ class Dispatcher(val index: IIndex, private val destinations: List<Destination>,
 
             targetDestination.toCopyHere.add(sourceFile)
             if (targetDestination.availableSpace().bytes() < 0) {
+                val toCopySize = toCopyToDestinations.map { it.size().onDisk() }.reduce { acc, size -> acc + size }
+                val copiedSize = targetDestination.toCopyHere.map { it.size().onDisk() }.reduce { acc, size -> acc + size }
+                val extraSizeNeeded = toCopySize - copiedSize
                 return Error(
                     "No space available for dispatching " +
-                            "${sourceFile.absolutePath()} to ${targetDestination.file.absolutePath()}; ")
+                            "${sourceFile.absolutePath()} to ${targetDestination.file.absolutePath()};\n" +
+                            "Dispatched to copy $toCopySize. Need $extraSizeNeeded more space")
             }
         }
 

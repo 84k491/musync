@@ -10,7 +10,7 @@
 
 // TODO save more data in index file because scanning all the files every time takes too long.
 // TODO Save destination data (total space, available space) to be able to dispatch without destinations connected
-// TODO Destinations can't be not connected
+// TODO Destinations can be not connected
 
 fun main(args: Array<String>) {
     val (app, initErr) = ApplicationFactory(args).buildApp()

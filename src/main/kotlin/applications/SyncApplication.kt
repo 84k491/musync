@@ -40,11 +40,13 @@ class SyncApplication(i: Index, private val inputStr: String?, private val fileB
         destinations.forEach { dest ->
             removeStrategy.addAll(dest.toRemove.asReversed().map { existingDestFile ->
                 {
+                    println("Removing ${existingDestFile.path} ...")
                     val success = fileBuilder.remove(existingDestFile)
                     GhostFile(index.getSource().absolutePrefix, existingDestFile.path, index).state.synced = success
                 }
             })
             copyStrategy.addAll(dest.toCopyHere.map { existingDestFile -> {
+                println("Copying ${existingDestFile.path} ...")
                 val success = fileBuilder.copy(existingDestFile, dest.composeTarget(existingDestFile))
                 GhostFile(index.getSource().absolutePrefix, existingDestFile.path, index).state.synced = success
             } })
@@ -63,8 +65,8 @@ class SyncApplication(i: Index, private val inputStr: String?, private val fileB
         if (copyStrategy.isNotEmpty()) {
             println("Copying...")
             copyStrategy.forEachIndexed { i, cb ->
-                println("${i + 1}/${copyStrategy.size}");
                 cb()
+                println("${i + 1}/${copyStrategy.size}");
             }
         }
 

@@ -1,5 +1,6 @@
 import interfaces.IExistingFile
 import interfaces.IFilesystemGate
+import java.io.IOException
 
 class FilesystemGate : IFilesystemGate {
     override fun build(ghost: GhostFile): IExistingFile? {
@@ -23,6 +24,13 @@ class FilesystemGate : IFilesystemGate {
             println("Panic! File $from was expected to exist")
             return false
         }
-        return from.file.copyTo(where.toPotentialFile()).exists()
+        return try {
+            from.file.copyTo(where.toPotentialFile()).exists()
+        } catch (e: Exception) {
+            when (e) {
+                is FileAlreadyExistsException -> true
+                else -> { println("Exception on copying file ${from.path}. Error: $e;"); false }
+            }
+        }
     }
 }
