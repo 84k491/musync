@@ -20,6 +20,7 @@ class ScanApplication(i: Index, private val fileBuilder: IFilesystemGate): Index
     override fun work(): Error? {
         syncSourceWithIndex()
         syncIndexWithDestinations()
+        println("Saving index file")
         index.save()
         return null
     }
@@ -32,11 +33,15 @@ class ScanApplication(i: Index, private val fileBuilder: IFilesystemGate): Index
     }
 
     private fun syncSourceWithIndex() {
+        println("Scanning source")
         val (toExclude, toRemove) = index.indexedFiles()
             .filter { null == fileBuilder.build(it) }
             .partition { ignoreDestinations || containedInDests(it.path) }
         toExclude.forEach { it.state.setAction(Action.Exclude) }
-        toRemove.forEach { index.permissions().remove(it.path.toString()) }
+        toRemove.forEach {
+            println("No file ${it.path}. Removing it from index")
+            index.permissions().remove(it.path.toString())
+        }
 
         val existingSource = fileBuilder.build(index.getSource())
         if (null == existingSource) {
@@ -51,17 +56,23 @@ class ScanApplication(i: Index, private val fileBuilder: IFilesystemGate): Index
         if (ignoreDestinations) {
             return
         }
+        println("Scanning destinations")
         val (contained, notContained) = index.indexedFiles()
-            .filter { it.state.getAction() != Action.Mixed }
-            .partition { containedInDests(it.path) }
+            //.filter { it.state.getAction() != Action.Mixed }
+            .partition {
+                val res = containedInDests(it.path)
+                res
+            }
 
         contained
             .forEach {
                 when (it.state.getAction()) {
-                    Action.Include, Action.Mixed -> {}
+                    Action.Include, Action.Mixed -> {
+                        it.state.synced = true
+                    }
                     Action.Exclude -> it.state.synced = false
                     Action.Undefined -> {
-                        it.state.setAction(Action.Include); it.state.synced = true // rev sync
+                        it.state.setAction(Action.Include); it.state.synced = true // reverse sync
                     }
                 }
             }

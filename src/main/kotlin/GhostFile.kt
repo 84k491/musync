@@ -32,13 +32,6 @@ open class GhostFile(val absolutePrefix: Path, val path: Path, val index: IIndex
         state.setAction(v)
     }
 
-    // private fun resetSyncRecursivelyDown() {
-    //     if (children.isNotEmpty()) {
-    //         children.forEach{ it.resetSyncRecursivelyDown() }
-    //     }
-    //     state.synced = false
-    // }
-
     fun findByPath(argPath: Path): GhostFile? {
         return all().find { it.path == argPath }
     }
@@ -47,14 +40,31 @@ open class GhostFile(val absolutePrefix: Path, val path: Path, val index: IIndex
         return sequenceOf(this) + children.asSequence().flatMap { it.all() }
     }
 
-    // fun updateAggregatedPermissions() {
-    //     val initAction = children.firstOrNull()?.state?.getAction() ?: return
+    private fun getParent(): GhostFile? {
+        if (path.nameCount <= 1) {
+            return null
+        }
+        return GhostFile(absolutePrefix, path.parent, index)
+    }
 
-    //     state.setAction(
-    //         children.fold(initAction) { acc: Action, file: GhostFile ->
-    //             if (acc == file.state.getAction()) acc else Action.Mixed
-    //         })
-    // }
+    fun updateParentsAction() {
+        val parentFile = getParent() ?: return
+
+        if (parentFile.updateActionByChildren()) {
+            parentFile.updateParentsAction()
+        }
+    }
+
+    private fun updateActionByChildren(): Boolean {
+        val initAction = children.first().state.getAction()
+
+        val newAction = children.fold(initAction) { acc: Action, file: GhostFile ->
+            if (acc == file.state.getAction()) acc else Action.Mixed
+        }
+        val res = newAction != state.getAction()
+        state.setAction(newAction)
+        return res
+    }
 
     fun absolutePath(): Path {
         return absolutePrefix.resolve(path)

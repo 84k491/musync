@@ -18,7 +18,7 @@ class FileApplication(private val cwd: Path, i: Index, private val args: List<St
     override fun work(): Error? {
         val action = decodeAction(args[0]) ?: return Error("Unknown action <${args[0]}>")
 
-        val inflatedWithFlag: Sequence<GhostFile> =
+        val allNew: Sequence<GhostFile> =
             if (args.contains(allNewFlag)) {
                 index.indexedFiles()
                     .filter { Action.Undefined == it.state.getAction() }
@@ -32,11 +32,10 @@ class FileApplication(private val cwd: Path, i: Index, private val args: List<St
             .drop(1)
             .filter { allNewFlag != it }
             .map { cwd.resolve(Path(it)).toAbsolutePath().normalize() }
-            .map { GhostFile(it, index) } +
-                inflatedWithFlag
+            .map { GhostFile(it, index) } + allNew
         filesToProcess
             .forEach { it.setActionRecursivelyDown(action) }
-
+        filesToProcess.forEach { it.updateParentsAction() }
         index.save()
         return null
     }
